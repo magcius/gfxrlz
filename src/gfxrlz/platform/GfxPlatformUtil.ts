@@ -253,6 +253,40 @@ export function align(n: number, multiple: number): number {
     return (n + mask) & ~mask;
 }
 
+export function alignNonPowerOfTwo(n: number, multiple: number): number {
+    return (((n + multiple - 1) / multiple) | 0) * multiple;
+}
+
 export function fallbackUndefined<T>(v: T | null | undefined, fallback: T): T {
     return (v !== null && v !== undefined) ? v : fallback;
+}
+
+export function clamp(v: number, min: number, max: number): number {
+    return Math.max(min, Math.min(v, max));
+}
+
+export function bisectRight<T>(L: T[], e: T, compare: (a: T, b: T) => number): number {
+    let lo = 0, hi = L.length;
+    while (lo < hi) {
+        const mid = lo + ((hi - lo) >>> 1);
+        const cmp = compare(e, L[mid]);
+        if (cmp < 0)
+            hi = mid;
+        else
+            lo = mid + 1;
+    }
+    return lo;
+}
+
+export function spliceBisectRight<T>(L: T[], e: T, compare: (a: T, b: T) => number): void {
+    const idx = bisectRight(L, e, compare);
+    L.splice(idx, 0, e);
+}
+
+export function setBitFlagEnabled(v: number, mask: number, enabled: boolean): number {
+    if (enabled)
+        v |= mask;
+    else
+        v &= ~mask;
+    return v;
 }

@@ -1,7 +1,7 @@
 
 // Things that should only be required by platform implementations.
 
-// Hack to get nominal typing.
+// Type flag, both for getting nominal typing in TypeScript, and also runtime typecasting in the platform implementations.
 export enum _T { Buffer, Texture, RenderTarget, Sampler, Program, Bindings, InputLayout, InputState, RenderPipeline, Readback };
 
 export interface GfxResourceBase { ResourceName?: string, ResourceUniqueId: number };

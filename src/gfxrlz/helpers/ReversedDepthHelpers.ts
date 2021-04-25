@@ -1,32 +1,32 @@
 
-// Reversed depth support
+// Reversed depth support.
 
 import { mat4 } from "gl-matrix";
 import { GfxCompareMode } from "../platform/GfxPlatform";
 
-export const IS_DEPTH_REVERSED = true;
+export const IsDepthReversed = true;
 
-export function reverseDepthForPerspectiveProjectionMatrix(m: mat4, isDepthReversed = IS_DEPTH_REVERSED): void {
+export function reverseDepthForPerspectiveProjectionMatrix(m: mat4, isDepthReversed = IsDepthReversed): void {
     if (isDepthReversed) {
         m[10] = -m[10];
         m[14] = -m[14];
     }
 }
 
-export function reverseDepthForOrthographicProjectionMatrix(m: mat4, isDepthReversed = IS_DEPTH_REVERSED): void {
+export function reverseDepthForOrthographicProjectionMatrix(m: mat4, isDepthReversed = IsDepthReversed): void {
     if (isDepthReversed) {
         m[10] = -m[10];
         m[14] = -m[14] + 1;
     }
 }
 
-export function reverseDepthForCompareMode(compareMode: GfxCompareMode, isDepthReversed = IS_DEPTH_REVERSED): GfxCompareMode {
+export function reverseDepthForCompareMode(compareMode: GfxCompareMode, isDepthReversed = IsDepthReversed): GfxCompareMode {
     if (isDepthReversed) {
         switch (compareMode) {
-        case GfxCompareMode.LESS:    return GfxCompareMode.GREATER;
-        case GfxCompareMode.LEQUAL:  return GfxCompareMode.GEQUAL;
-        case GfxCompareMode.GEQUAL:  return GfxCompareMode.LEQUAL;
-        case GfxCompareMode.GREATER: return GfxCompareMode.LESS;
+        case GfxCompareMode.Less:         return GfxCompareMode.Greater;
+        case GfxCompareMode.LessEqual:    return GfxCompareMode.GreaterEqual;
+        case GfxCompareMode.GreaterEqual: return GfxCompareMode.LessEqual;
+        case GfxCompareMode.Greater:      return GfxCompareMode.Less;
         default: return compareMode;
         }
     } else {
@@ -34,7 +34,7 @@ export function reverseDepthForCompareMode(compareMode: GfxCompareMode, isDepthR
     }
 }
 
-export function reverseDepthForClearValue(n: number, isDepthReversed = IS_DEPTH_REVERSED): number {
+export function reverseDepthForClearValue(n: number, isDepthReversed = IsDepthReversed): number {
     if (isDepthReversed) {
         return 1.0 - n;
     } else {
@@ -42,7 +42,7 @@ export function reverseDepthForClearValue(n: number, isDepthReversed = IS_DEPTH_
     }
 }
 
-export function reverseDepthForDepthOffset(n: number, isDepthReversed = IS_DEPTH_REVERSED): number {
+export function reverseDepthForDepthOffset(n: number, isDepthReversed = IsDepthReversed): number {
     if (isDepthReversed) {
         return -n;
     } else {
@@ -50,15 +50,15 @@ export function reverseDepthForDepthOffset(n: number, isDepthReversed = IS_DEPTH
     }
 }
 
-export function compareDepthValues(a: number, b: number, op: GfxCompareMode, isDepthReversed = IS_DEPTH_REVERSED): boolean {
+export function compareDepthValues(a: number, b: number, op: GfxCompareMode, isDepthReversed = IsDepthReversed): boolean {
     op = reverseDepthForCompareMode(op, isDepthReversed);
-    if (op === GfxCompareMode.LESS)
+    if (op === GfxCompareMode.Less)
         return a < b;
-    else if (op === GfxCompareMode.LEQUAL)
+    else if (op === GfxCompareMode.LessEqual)
         return a <= b;
-    else if (op === GfxCompareMode.GREATER)
+    else if (op === GfxCompareMode.Greater)
         return a > b;
-    else if (op === GfxCompareMode.GEQUAL)
+    else if (op === GfxCompareMode.GreaterEqual)
         return a >= b;
     else
         throw "whoops";
