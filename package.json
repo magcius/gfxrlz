@@ -1,0 +1,9 @@
+{
+  "name": "gfxrlz",
+  "version": "0.0.1",
+  "description": "Modern-style graphics layer, designed with both WebGL 2 and WebGPU in mind...",
+  "main": "index.js",
+  "repository": "https://github.com/magcius/gfxrlz",
+  "author": "Jasper St. Pierre",
+  "license": "MIT"
+}
