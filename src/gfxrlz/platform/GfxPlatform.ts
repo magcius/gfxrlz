@@ -199,7 +199,7 @@ export const enum GfxChannelWriteMask {
 }
 
 export interface GfxAttachmentState {
-    colorWriteMask: GfxChannelWriteMask;
+    channelWriteMask: GfxChannelWriteMask;
     rgbBlendState: GfxChannelBlendState;
     alphaBlendState: GfxChannelBlendState;
 }

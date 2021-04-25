@@ -14,13 +14,13 @@ function copyAttachmentState(dst: GfxAttachmentState | undefined, src: GfxAttach
         dst = {
             rgbBlendState: {} as GfxChannelBlendState,
             alphaBlendState: {} as GfxChannelBlendState,
-            colorWriteMask: 0,
+            channelWriteMask: 0,
         };
     }
 
     copyChannelBlendState(dst.rgbBlendState, src.rgbBlendState);
     copyChannelBlendState(dst.alphaBlendState, src.alphaBlendState);
-    dst.colorWriteMask = src.colorWriteMask;
+    dst.channelWriteMask = src.channelWriteMask;
     return dst;
 }
 
@@ -67,15 +67,15 @@ export function makeMegaState(other: Partial<GfxMegaStateDescriptor> | null = nu
 }
 
 export interface AttachmentStateSimple {
-    colorWriteMask: GfxChannelWriteMask;
+    channelWriteMask: GfxChannelWriteMask;
     blendMode: GfxBlendMode;
     blendSrcFactor: GfxBlendFactor;
     blendDstFactor: GfxBlendFactor;
 }
 
 export function copyAttachmentStateFromSimple(dst: GfxAttachmentState, src: Partial<AttachmentStateSimple>): void {
-    if (src.colorWriteMask !== undefined)
-        dst.colorWriteMask = src.colorWriteMask;
+    if (src.channelWriteMask !== undefined)
+        dst.channelWriteMask = src.channelWriteMask;
 
     if (src.blendMode !== undefined) {
         dst.rgbBlendState.blendMode = src.blendMode;
@@ -111,7 +111,7 @@ const defaultBlendState: GfxChannelBlendState = {
 
 export const defaultMegaState: GfxMegaStateDescriptor = {
     attachmentsState: [{
-        colorWriteMask: GfxChannelWriteMask.AllColors,
+        channelWriteMask: GfxChannelWriteMask.AllColors,
         rgbBlendState: defaultBlendState,
         alphaBlendState: defaultBlendState,
     }],

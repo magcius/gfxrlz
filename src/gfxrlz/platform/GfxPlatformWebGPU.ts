@@ -278,7 +278,7 @@ function translateColorState(attachmentState: GfxAttachmentState, format: GfxFor
             color: translateBlendState(attachmentState.rgbBlendState),
             alpha: translateBlendState(attachmentState.alphaBlendState),
         },
-        writeMask: attachmentState.colorWriteMask,
+        writeMask: attachmentState.channelWriteMask,
     };
 }
 

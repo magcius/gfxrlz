@@ -349,14 +349,14 @@ function isBlendStateNone(blendState: GfxChannelBlendState): boolean {
 function applyAttachmentState(gl: WebGL2RenderingContext, i: number, currentAttachmentState: GfxAttachmentState, newAttachmentState: GfxAttachmentState): void {
     assert(i === 0);
 
-    if (currentAttachmentState.colorWriteMask !== newAttachmentState.colorWriteMask) {
+    if (currentAttachmentState.channelWriteMask !== newAttachmentState.channelWriteMask) {
         gl.colorMask(
-            !!(newAttachmentState.colorWriteMask & GfxChannelWriteMask.Red),
-            !!(newAttachmentState.colorWriteMask & GfxChannelWriteMask.Green),
-            !!(newAttachmentState.colorWriteMask & GfxChannelWriteMask.Blue),
-            !!(newAttachmentState.colorWriteMask & GfxChannelWriteMask.Alpha),
+            !!(newAttachmentState.channelWriteMask & GfxChannelWriteMask.Red),
+            !!(newAttachmentState.channelWriteMask & GfxChannelWriteMask.Green),
+            !!(newAttachmentState.channelWriteMask & GfxChannelWriteMask.Blue),
+            !!(newAttachmentState.channelWriteMask & GfxChannelWriteMask.Alpha),
         );
-        currentAttachmentState.colorWriteMask = newAttachmentState.colorWriteMask;
+        currentAttachmentState.channelWriteMask = newAttachmentState.channelWriteMask;
     }
 
     const blendModeChanged = (
@@ -618,7 +618,7 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
         // Adjust for GL defaults.
         this._currentMegaState.depthCompare = GfxCompareMode.Less;
         this._currentMegaState.depthWrite = false;
-        this._currentMegaState.attachmentsState[0].colorWriteMask = GfxChannelWriteMask.AllChannels;
+        this._currentMegaState.attachmentsState[0].channelWriteMask = GfxChannelWriteMask.AllChannels;
 
         // We always have depth test enabled.
         gl.enable(gl.DEPTH_TEST);
@@ -676,9 +676,9 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
 
         // TODO(jstpierre): Remove this eventually?
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        if (this._currentMegaState.attachmentsState[0].colorWriteMask !== GfxChannelWriteMask.Alpha) {
+        if (this._currentMegaState.attachmentsState[0].channelWriteMask !== GfxChannelWriteMask.Alpha) {
             gl.colorMask(false, false, false, true);
-            this._currentMegaState.attachmentsState[0].colorWriteMask = GfxChannelWriteMask.Alpha;
+            this._currentMegaState.attachmentsState[0].channelWriteMask = GfxChannelWriteMask.Alpha;
         }
         gl.clear(gl.COLOR_BUFFER_BIT);
     }
@@ -1809,9 +1809,9 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
         if (!!(clearBits & WebGL2RenderingContext.COLOR_BUFFER_BIT)) {
             assert(this._currentColorAttachments.length > 0);
             gl.clearColor(clearColorR, clearColorG, clearColorB, clearColorA);
-            if (this._currentMegaState.attachmentsState[0].colorWriteMask !== GfxChannelWriteMask.AllChannels) {
+            if (this._currentMegaState.attachmentsState[0].channelWriteMask !== GfxChannelWriteMask.AllChannels) {
                 gl.colorMask(true, true, true, true);
-                this._currentMegaState.attachmentsState[0].colorWriteMask = GfxChannelWriteMask.AllChannels;
+                this._currentMegaState.attachmentsState[0].channelWriteMask = GfxChannelWriteMask.AllChannels;
             }
         }
         if (!!(clearBits & WebGL2RenderingContext.DEPTH_BUFFER_BIT)) {
