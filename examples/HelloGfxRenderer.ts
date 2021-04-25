@@ -151,8 +151,6 @@ class Main {
 
         const canvas = this.swapchain.getCanvas();
         this.swapchain.configureSwapChain(canvas.width, canvas.height);
-
-        this.renderHelper = new GfxRenderHelper(this.device);
     }
 
     public run(): void {
