@@ -70,6 +70,37 @@ export const enum GfxVertexBufferFrequency {
     PerInstance = 0x02,
 }
 
+export const enum GfxTextureDimension {
+    n2D, n2DArray, n3D, Cube,
+}
+
+export const enum GfxTextureUsage {
+    Sampled      = 0x01,
+    RenderTarget = 0x02,
+}
+
+export const enum GfxChannelWriteMask {
+    None        = 0x00,
+    Red         = 0x01,
+    Green       = 0x02,
+    Blue        = 0x04,
+    Alpha       = 0x08,
+
+    RGB         = 0x07,
+    AllChannels = 0x0F,
+}
+
+export enum GfxStencilOp {
+    Keep            = WebGLRenderingContext.KEEP,
+    Zero            = WebGLRenderingContext.ZERO,
+    Replace         = WebGLRenderingContext.REPLACE,
+    Invert          = WebGLRenderingContext.INVERT,
+    IncrementClamp  = WebGLRenderingContext.INCR,
+    DecrementClamp  = WebGLRenderingContext.DECR,
+    IncrementWrap   = WebGLRenderingContext.INCR_WRAP,
+    DecrementWrap   = WebGLRenderingContext.DECR_WRAP,
+}
+
 export interface GfxVertexBufferDescriptor {
     buffer: GfxBuffer;
     byteOffset: number;
@@ -88,15 +119,6 @@ export interface GfxVertexAttributeDescriptor {
 export interface GfxInputLayoutBufferDescriptor {
     byteStride: number;
     frequency: GfxVertexBufferFrequency;
-}
-
-export const enum GfxTextureDimension {
-    n2D, n2DArray, n3D, Cube,
-}
-
-export const enum GfxTextureUsage {
-    Sampled      = 0x01,
-    RenderTarget = 0x02,
 }
 
 export interface GfxTextureDescriptor {
@@ -170,32 +192,10 @@ export interface GfxInputLayoutDescriptor {
     indexBufferFormat: GfxFormat | null;
 }
 
-export enum GfxStencilOp {
-    Keep            = WebGLRenderingContext.KEEP,
-    Zero            = WebGLRenderingContext.ZERO,
-    Replace         = WebGLRenderingContext.REPLACE,
-    Invert          = WebGLRenderingContext.INVERT,
-    IncrementClamp  = WebGLRenderingContext.INCR,
-    DecrementClamp  = WebGLRenderingContext.DECR,
-    IncrementWrap   = WebGLRenderingContext.INCR_WRAP,
-    DecrementWrap   = WebGLRenderingContext.DECR_WRAP,
-}
-
 export interface GfxChannelBlendState {
     blendMode: GfxBlendMode;
     blendSrcFactor: GfxBlendFactor;
     blendDstFactor: GfxBlendFactor;
-}
-
-export const enum GfxChannelWriteMask {
-    None  = 0x00,
-    Red   = 0x01,
-    Green = 0x02,
-    Blue  = 0x04,
-    Alpha = 0x08,
-
-    AllColors = 0x07,
-    AllChannels = 0x0F,
 }
 
 export interface GfxAttachmentState {
