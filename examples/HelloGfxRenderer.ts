@@ -191,7 +191,7 @@ class Main {
         this.renderHelper.prepareToRender();
 
         // Schedule & run the render graph that we built above.
-        this.renderHelper.renderGraph.execute(this.device, builder);
+        this.renderHelper.renderGraph.execute(builder);
 
         // Reset the render inst manager.
         renderInstManager.resetRenderInsts();

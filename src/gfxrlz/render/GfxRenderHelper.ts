@@ -6,13 +6,14 @@ import { GfxRenderInst, GfxRenderInstManager } from "./GfxRenderInstManager";
 import { GfxrRenderGraph, GfxrRenderGraphImpl } from "./GfxRenderGraph";
 
 export class GfxRenderHelper {
-    public uniformBuffer: GfxRenderDynamicUniformBuffer;
-    public renderInstManager: GfxRenderInstManager;
     public renderCache: GfxRenderCache;
-    public renderGraph: GfxrRenderGraph = new GfxrRenderGraphImpl();
+    public renderGraph: GfxrRenderGraph;
+    public renderInstManager: GfxRenderInstManager;
+    public uniformBuffer: GfxRenderDynamicUniformBuffer;
 
     constructor(public device: GfxDevice, renderCache: GfxRenderCache | null = null) {
         this.renderCache = renderCache !== null ? renderCache : new GfxRenderCache(this.device);
+        this.renderGraph = new GfxrRenderGraphImpl(this.device);
         this.renderInstManager = new GfxRenderInstManager(this.device, this.renderCache);
         this.uniformBuffer = new GfxRenderDynamicUniformBuffer(this.device);
     }
@@ -24,13 +25,13 @@ export class GfxRenderHelper {
     }
 
     public prepareToRender(): void {
-        this.uniformBuffer.prepareToRender(this.device);
+        this.uniformBuffer.prepareToRender();
     }
 
     public destroy(): void {
-        this.uniformBuffer.destroy(this.device);
+        this.uniformBuffer.destroy();
         this.renderInstManager.destroy();
         this.renderCache.destroy();
-        this.renderGraph.destroy(this.device);
+        this.renderGraph.destroy();
     }
 }

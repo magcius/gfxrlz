@@ -14,7 +14,7 @@ export class GfxRenderDynamicUniformBuffer {
     private shadowBufferF32: Float32Array | null = null;
     private shadowBufferU8: Uint8Array | null = null;
 
-    constructor(device: GfxDevice) {
+    constructor(private device: GfxDevice) {
         const limits = device.queryLimits();
         this.uniformBufferWordAlignment = limits.uniformBufferWordAlignment;
         this.uniformBufferMaxPageWordSize = limits.uniformBufferMaxPageWordSize;
@@ -69,7 +69,7 @@ export class GfxRenderDynamicUniformBuffer {
         return assertExists(this.shadowBufferF32);
     }
 
-    public prepareToRender(device: GfxDevice): void {
+    public prepareToRender(): void {
         if (this.shadowBufferF32 === null) {
             // Nothing to do.
             return;
@@ -81,9 +81,9 @@ export class GfxRenderDynamicUniformBuffer {
             this.currentBufferWordSize = shadowBufferF32.length;
 
             if (this.gfxBuffer !== null)
-                device.destroyBuffer(this.gfxBuffer);
+                this.device.destroyBuffer(this.gfxBuffer);
 
-            this.gfxBuffer = device.createBuffer(this.currentBufferWordSize, GfxBufferUsage.Uniform, GfxBufferFrequencyHint.Dynamic);
+            this.gfxBuffer = this.device.createBuffer(this.currentBufferWordSize, GfxBufferUsage.Uniform, GfxBufferFrequencyHint.Dynamic);
         }
 
         const wordCount = alignNonPowerOfTwo(this.currentWordOffset, this.uniformBufferMaxPageWordSize);
@@ -91,16 +91,16 @@ export class GfxRenderDynamicUniformBuffer {
             throw new Error(`Assert fail: wordCount [${wordCount}] (${this.currentWordOffset} aligned ${this.uniformBufferMaxPageWordSize}) <= this.currentBufferWordSize [${this.currentBufferWordSize}]`);
 
         const gfxBuffer = assertExists(this.gfxBuffer);
-        device.uploadBufferData(gfxBuffer, 0, this.shadowBufferU8!, 0, wordCount * 4);
+        this.device.uploadBufferData(gfxBuffer, 0, this.shadowBufferU8!, 0, wordCount * 4);
 
         // Reset the offset for next frame.
         // TODO(jstpierre): Should this be a separate step?
         this.currentWordOffset = 0;
     }
 
-    public destroy(device: GfxDevice): void {
+    public destroy(): void {
         if (this.gfxBuffer !== null)
-            device.destroyBuffer(this.gfxBuffer);
+            this.device.destroyBuffer(this.gfxBuffer);
 
         this.shadowBufferF32 = null;
         this.shadowBufferU8 = null;
