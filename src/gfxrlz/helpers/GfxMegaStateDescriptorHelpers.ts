@@ -1,5 +1,5 @@
 
-import { GfxMegaStateDescriptor, GfxFrontFaceMode, GfxCullMode, GfxStencilOp, GfxCompareMode, GfxBlendFactor, GfxBlendMode, GfxAttachmentState, GfxColorWriteMask, GfxChannelBlendState } from "../platform/GfxPlatform";
+import { GfxMegaStateDescriptor, GfxFrontFaceMode, GfxCullMode, GfxStencilOp, GfxCompareMode, GfxBlendFactor, GfxBlendMode, GfxAttachmentState, GfxChannelWriteMask, GfxChannelBlendState } from "../platform/GfxPlatform";
 import { reverseDepthForCompareMode } from "./ReversedDepthHelpers";
 import { fallbackUndefined, gfxColorCopy, gfxColorNewCopy } from "../platform/GfxPlatformUtil";
 
@@ -67,7 +67,7 @@ export function makeMegaState(other: Partial<GfxMegaStateDescriptor> | null = nu
 }
 
 export interface AttachmentStateSimple {
-    colorWriteMask: GfxColorWriteMask;
+    colorWriteMask: GfxChannelWriteMask;
     blendMode: GfxBlendMode;
     blendSrcFactor: GfxBlendFactor;
     blendDstFactor: GfxBlendFactor;
@@ -104,27 +104,27 @@ export function setAttachmentStateSimple(dst: Partial<GfxMegaStateDescriptor>, s
 }
 
 const defaultBlendState: GfxChannelBlendState = {
-    blendMode: GfxBlendMode.ADD,
-    blendSrcFactor: GfxBlendFactor.ONE,
-    blendDstFactor: GfxBlendFactor.ZERO,
+    blendMode: GfxBlendMode.Add,
+    blendSrcFactor: GfxBlendFactor.One,
+    blendDstFactor: GfxBlendFactor.Zero,
 };
 
 export const defaultMegaState: GfxMegaStateDescriptor = {
     attachmentsState: [{
-        colorWriteMask: GfxColorWriteMask.COLOR,
+        colorWriteMask: GfxChannelWriteMask.AllColors,
         rgbBlendState: defaultBlendState,
         alphaBlendState: defaultBlendState,
     }],
 
     blendConstant: { r: 0, g: 0, b: 0, a: 0 },
     depthWrite: true,
-    depthCompare: reverseDepthForCompareMode(GfxCompareMode.LEQUAL),
-    stencilCompare: GfxCompareMode.NEVER,
+    depthCompare: reverseDepthForCompareMode(GfxCompareMode.LessEqual),
+    stencilCompare: GfxCompareMode.Never,
     stencilWrite: false,
-    stencilPassOp: GfxStencilOp.KEEP,
-    cullMode: GfxCullMode.NONE,
+    stencilPassOp: GfxStencilOp.Keep,
+    cullMode: GfxCullMode.None,
     frontFace: GfxFrontFaceMode.CCW,
     polygonOffset: false,
 };
 
-export const fullscreenMegaState = makeMegaState({ depthCompare: GfxCompareMode.ALWAYS, depthWrite: false }, defaultMegaState);
+export const fullscreenMegaState = makeMegaState({ depthCompare: GfxCompareMode.Always, depthWrite: false }, defaultMegaState);

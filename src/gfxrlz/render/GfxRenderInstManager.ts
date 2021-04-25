@@ -437,7 +437,7 @@ export class GfxRenderInst {
      * to override this and force the render inst to draw, please use {@see setAllowSkippingIfPipelineNotReady}.
      */
     public queryPipelineReady(device: GfxDevice, cache: GfxRenderCache): boolean {
-        const gfxPipeline = cache.createRenderPipeline(device, this._renderPipelineDescriptor);
+        const gfxPipeline = cache.createRenderPipeline(this._renderPipelineDescriptor);
         return device.queryPipelineReady(gfxPipeline);
     }
 
@@ -467,7 +467,7 @@ export class GfxRenderInst {
     public drawOnPass(device: GfxDevice, cache: GfxRenderCache, passRenderer: GfxRenderPass): boolean {
         this.setAttachmentFormatsFromRenderPass(device, passRenderer);
 
-        const gfxPipeline = cache.createRenderPipeline(device, this._renderPipelineDescriptor);
+        const gfxPipeline = cache.createRenderPipeline(this._renderPipelineDescriptor);
         if (!!(this._flags & GfxRenderInstFlags.AllowSkippingIfPipelineNotReady) && !device.queryPipelineReady(gfxPipeline))
             return false;
 
@@ -482,7 +482,7 @@ export class GfxRenderInst {
             this._bindingDescriptors[0].uniformBufferBindings[i].buffer = this._uniformBuffer.gfxBuffer!;
 
         // TODO(jstpierre): Support multiple binding descriptors.
-        const gfxBindings = cache.createBindings(device, this._bindingDescriptors[0]);
+        const gfxBindings = cache.createBindings(this._bindingDescriptors[0]);
         passRenderer.setBindings(0, gfxBindings, this._dynamicUniformBufferByteOffsets);
 
         if (this._drawInstanceCount > 1) {
@@ -723,9 +723,9 @@ export class GfxRenderInstManager {
         assert(this.templatePool.allocCount === 0);
     }
 
-    public destroy(device: GfxDevice): void {
+    public destroy(): void {
         this.instPool.destroy();
-        this.gfxRenderCache.destroy(device);
+        this.gfxRenderCache.destroy();
     }
 
     /**

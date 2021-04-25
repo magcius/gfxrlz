@@ -1,0 +1,9 @@
+{
+    "extends": "../tsconfig.base.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "gfxrlz/*": ["node_modules/gfxrlz/src/gfxrlz/*"]
+        }
+    },
+}
