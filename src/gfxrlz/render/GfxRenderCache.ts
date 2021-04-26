@@ -98,7 +98,7 @@ export class GfxRenderCache {
         return this.createProgramSimple(gfxProgramDescriptor);
     }
 
-    public createSampler(device: GfxDevice, descriptor: GfxSamplerDescriptor): GfxSampler {
+    public createSampler(descriptor: GfxSamplerDescriptor): GfxSampler {
         let sampler = this.gfxSamplerCache.get(descriptor);
         if (sampler === null) {
             sampler = this.device.createSampler(descriptor);
