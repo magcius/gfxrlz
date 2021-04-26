@@ -783,20 +783,3 @@ export class GfxRenderInstManager {
     }
     //#endregion
 }
-
-/**
- * {@deprecated}
- */
-export function executeOnPass(renderInstManager: GfxRenderInstManager, passRenderer: GfxRenderPass, passMask: number, resetState: boolean = true): void {
-    renderInstManager.setVisibleByFilterKeyExact(passMask);
-    renderInstManager.drawOnPassRenderer(passRenderer);
-}
-
-/**
- * {@deprecated}
- */
-export function hasAnyVisible(renderInstManager: GfxRenderInstManager, passMask: number): boolean {
-    renderInstManager.setVisibleByFilterKeyExact(passMask);
-    return renderInstManager.hasAnyVisible();
-}
-//#endregion
