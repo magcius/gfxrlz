@@ -14,7 +14,7 @@ export class GfxRenderHelper {
     constructor(public device: GfxDevice, renderCache: GfxRenderCache | null = null) {
         this.renderCache = renderCache !== null ? renderCache : new GfxRenderCache(this.device);
         this.renderGraph = new GfxrRenderGraphImpl(this.device);
-        this.renderInstManager = new GfxRenderInstManager(this.device, this.renderCache);
+        this.renderInstManager = new GfxRenderInstManager(this.renderCache);
         this.uniformBuffer = new GfxRenderDynamicUniformBuffer(this.device);
     }
 

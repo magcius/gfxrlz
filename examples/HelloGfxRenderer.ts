@@ -179,7 +179,7 @@ class Main {
             pass.attachRenderTargetID(GfxrAttachmentSlot.Color0, renderTargetID);
 
             pass.exec((passRenderer) => {
-                renderInstManager.drawOnPassRenderer(this.device, passRenderer);
+                renderInstManager.drawOnPassRenderer(passRenderer);
             });
         });
         // Push postprocessing passes, if desired...
