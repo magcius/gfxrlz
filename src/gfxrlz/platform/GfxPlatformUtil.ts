@@ -265,6 +265,10 @@ export function clamp(v: number, min: number, max: number): number {
     return Math.max(min, Math.min(v, max));
 }
 
+export function saturate(v: number): number {
+    return clamp(v, 0.0, 1.0);
+}
+
 export function bisectRight<T>(L: T[], e: T, compare: (a: T, b: T) => number): number {
     let lo = 0, hi = L.length;
     while (lo < hi) {
@@ -289,4 +293,12 @@ export function setBitFlagEnabled(v: number, mask: number, enabled: boolean): nu
     else
         v &= ~mask;
     return v;
+}
+
+export function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+
+export function smoothstep(t: number): number {
+    return t*t*(3 - t*2);
 }
