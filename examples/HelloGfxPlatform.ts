@@ -6,7 +6,6 @@ import { mat4 } from "gl-matrix";
 import { createSwapChainForWebGL2, GfxPlatformWebGL2Config } from "gfxrlz/platform/GfxPlatformWebGL2";
 import { GfxSwapChain, GfxDevice, GfxBuffer, GfxInputLayout, GfxInputState, GfxBufferUsage, GfxFormat, GfxVertexBufferFrequency, GfxProgram, GfxClipSpaceNearZ, GfxRenderPass, GfxBindings, GfxBufferFrequencyHint, GfxRenderPipeline, GfxPrimitiveTopology, GfxBindingLayoutDescriptor, GfxRenderTarget } from "gfxrlz/platform/GfxPlatform";
 import { projectionMatrixConvertClipSpaceNearZ } from "gfxrlz/helpers/ProjectionHelpers";
-import { GfxRenderCache } from "gfxrlz/render/GfxRenderCache";
 import { makeStaticDataBuffer } from "gfxrlz/helpers/BufferHelpers";
 import { fillMatrix4x4 } from "gfxrlz/helpers/UniformBufferHelpers";
 import { preprocessProgramObj_GLSL } from "gfxrlz/shaderc/GfxShaderCompiler";
@@ -54,7 +53,7 @@ class HelloGfxPlatform {
     private uniformBuffer: GfxBuffer;
     private renderPipeline: GfxRenderPipeline;
 
-    constructor(private device: GfxDevice, cache: GfxRenderCache) {
+    constructor(private device: GfxDevice) {
         const vertexData = new Float32Array([
             // Top       Red
             0,  1, 0,    1, 0, 0,
@@ -66,7 +65,7 @@ class HelloGfxPlatform {
 
         this.vertexBuffer = makeStaticDataBuffer(device, GfxBufferUsage.Vertex, vertexData.buffer);
 
-        this.inputLayout = cache.createInputLayout({
+        this.inputLayout = this.device.createInputLayout({
             vertexBufferDescriptors: [
                 { byteStride: 4 * 6, frequency: GfxVertexBufferFrequency.PerVertex, },
             ],
@@ -87,9 +86,9 @@ class HelloGfxPlatform {
         ];
 
         const program = new HelloTriangleProgram();
-        this.program = cache.createProgramSimple(preprocessProgramObj_GLSL(device, program));
+        this.program = this.device.createProgramSimple(preprocessProgramObj_GLSL(this.device, program));
 
-        this.renderPipeline = cache.createRenderPipeline({
+        this.renderPipeline = this.device.createRenderPipeline({
             topology: GfxPrimitiveTopology.Triangles,
             sampleCount: 1,
             program: this.program,
@@ -103,9 +102,9 @@ class HelloGfxPlatform {
         // Uniform buffers must always be a multiple of the page size...
         const limits = this.device.queryLimits();
         const uniformBufferPageSize = limits.uniformBufferMaxPageWordSize;
-        this.uniformBuffer = device.createBuffer(uniformBufferPageSize, GfxBufferUsage.Uniform, GfxBufferFrequencyHint.Dynamic);
+        this.uniformBuffer = this.device.createBuffer(uniformBufferPageSize, GfxBufferUsage.Uniform, GfxBufferFrequencyHint.Dynamic);
 
-        this.bindings = cache.createBindings({ 
+        this.bindings = this.device.createBindings({ 
             bindingLayout: bindingLayouts[0],
             samplerBindings: [],
             uniformBufferBindings: [{ buffer: this.uniformBuffer, wordCount: 16 }],
@@ -165,14 +164,12 @@ class HelloGfxPlatform {
 
 class Main {
     private device: GfxDevice;
-    private cache: GfxRenderCache;
     private helloTriangle: HelloGfxPlatform;
     private renderTarget: GfxRenderTarget;
 
     constructor(private swapchain: GfxSwapChain) {
         this.device = this.swapchain.getDevice();
-        this.cache = new GfxRenderCache(this.device);
-        this.helloTriangle = new HelloGfxPlatform(this.device, this.cache);
+        this.helloTriangle = new HelloGfxPlatform(this.device);
 
         const canvas = this.swapchain.getCanvas();
         this.swapchain.configureSwapChain(canvas.width, canvas.height);
@@ -203,7 +200,6 @@ class Main {
     }
 
     public destroy(): void {
-        this.cache.destroy();
         this.helloTriangle.destroy();
     }
 }
