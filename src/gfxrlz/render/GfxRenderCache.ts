@@ -1,5 +1,5 @@
 
-import { GfxBindingsDescriptor, GfxBindings, GfxDevice, GfxRenderPipelineDescriptor, GfxRenderPipeline, GfxProgram, GfxInputLayoutDescriptor, GfxInputLayout, GfxSamplerDescriptor, GfxSampler, GfxProgramDescriptor, GfxProgramDescriptorSimple, GfxBindingLayoutDescriptor, GfxMegaStateDescriptor, GfxColor, GfxAttachmentState, GfxChannelBlendState } from "../platform/GfxPlatform";
+import { GfxBindingsDescriptor, GfxBindings, GfxDevice, GfxRenderPipelineDescriptor, GfxRenderPipeline, GfxProgram, GfxInputLayoutDescriptor, GfxInputLayout, GfxSamplerDescriptor, GfxSampler, GfxProgramDescriptorSimple, GfxBindingLayoutDescriptor, GfxMegaStateDescriptor, GfxColor, GfxAttachmentState, GfxChannelBlendState, GfxVendorInfo } from "../platform/GfxPlatform";
 import { gfxBindingsDescriptorCopy, gfxRenderPipelineDescriptorCopy, gfxBindingsDescriptorEquals, gfxRenderPipelineDescriptorEquals, gfxInputLayoutDescriptorEquals, gfxSamplerDescriptorEquals, gfxInputLayoutDescriptorCopy } from '../platform/GfxPlatformUtil';
 import { HashMap, nullHashFunc, hashCodeNumberFinish, hashCodeNumberUpdate } from "../../HashMap";
 import { assert } from "../platform/GfxPlatformUtil";
@@ -84,6 +84,11 @@ function gfxBindingsDescriptorHash(a: GfxBindingsDescriptor): number {
     return hashCodeNumberFinish(hash);
 }
 
+interface GfxProgramDescriptor extends GfxProgramDescriptorSimple {
+    ensurePreprocessed(vendorInfo: GfxVendorInfo): void;
+    associate(device: GfxDevice, program: GfxProgram): void;
+}
+
 export class GfxRenderCache {
     private gfxBindingsCache = new HashMap<GfxBindingsDescriptor, GfxBindings>(gfxBindingsDescriptorEquals, gfxBindingsDescriptorHash);
     private gfxRenderPipelinesCache = new HashMap<GfxRenderPipelineDescriptor, GfxRenderPipeline>(gfxRenderPipelineDescriptorEquals, gfxRenderPipelineDescriptorHash);
@@ -128,7 +133,7 @@ export class GfxRenderCache {
         let program = this.gfxProgramCache.get(gfxProgramDescriptorSimple);
         if (program === null) {
             const descriptorCopy = gfxProgramDescriptorSimpleCopy(gfxProgramDescriptorSimple);
-            program = this.device.createProgramSimple(descriptorCopy);
+            program = this.device.createProgram(descriptorCopy);
             this.gfxProgramCache.add(descriptorCopy, program);
 
             // TODO(jstpierre): Ugliness

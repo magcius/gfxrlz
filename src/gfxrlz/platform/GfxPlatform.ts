@@ -181,11 +181,6 @@ export interface GfxProgramDescriptorSimple {
     preprocessedFrag: string;
 }
 
-export interface GfxProgramDescriptor extends GfxProgramDescriptorSimple {
-    ensurePreprocessed(vendorInfo: GfxVendorInfo): void;
-    associate(device: GfxDevice, program: GfxProgram): void;
-}
-
 export interface GfxInputLayoutDescriptor {
     vertexBufferDescriptors: (GfxInputLayoutBufferDescriptor | null)[];
     vertexAttributeDescriptors: GfxVertexAttributeDescriptor[];
@@ -336,8 +331,7 @@ export interface GfxDevice {
     createSampler(descriptor: GfxSamplerDescriptor): GfxSampler;
     createRenderTarget(descriptor: GfxRenderTargetDescriptor): GfxRenderTarget;
     createRenderTargetFromTexture(texture: GfxTexture): GfxRenderTarget;
-    createProgram(program: GfxProgramDescriptor): GfxProgram;
-    createProgramSimple(program: GfxProgramDescriptorSimple): GfxProgram;
+    createProgram(program: GfxProgramDescriptorSimple): GfxProgram;
     createBindings(bindingsDescriptor: GfxBindingsDescriptor): GfxBindings;
     createInputLayout(inputLayoutDescriptor: GfxInputLayoutDescriptor): GfxInputLayout;
     createInputState(inputLayout: GfxInputLayout, buffers: (GfxVertexBufferDescriptor | null)[], indexBuffer: GfxIndexBufferDescriptor | null): GfxInputState;

@@ -1,5 +1,5 @@
 
-import { GfxSwapChain, GfxDevice, GfxTexture, GfxBuffer, GfxBufferFrequencyHint, GfxBufferUsage, GfxBindingsDescriptor, GfxTextureDescriptor, GfxSamplerDescriptor, GfxInputLayoutDescriptor, GfxInputLayout, GfxVertexBufferDescriptor, GfxInputState, GfxRenderPipelineDescriptor, GfxRenderPipeline, GfxSampler, GfxProgram, GfxBindings, GfxWrapMode, GfxTexFilterMode, GfxMipFilterMode, GfxDebugGroup, GfxPass, GfxRenderPassDescriptor, GfxRenderPass, GfxDeviceLimits, GfxFormat, GfxVendorInfo, GfxTextureDimension, GfxBindingLayoutDescriptor, GfxPrimitiveTopology, GfxMegaStateDescriptor, GfxCullMode, GfxFrontFaceMode, GfxAttachmentState, GfxChannelBlendState, GfxBlendFactor, GfxBlendMode, GfxCompareMode, GfxVertexBufferFrequency, GfxIndexBufferDescriptor, GfxProgramDescriptor, GfxProgramDescriptorSimple, GfxRenderTarget, GfxRenderTargetDescriptor, makeTextureDescriptor2D, GfxClipSpaceNearZ, GfxTextureUsage } from "./GfxPlatform";
+import { GfxSwapChain, GfxDevice, GfxTexture, GfxBuffer, GfxBufferFrequencyHint, GfxBufferUsage, GfxBindingsDescriptor, GfxTextureDescriptor, GfxSamplerDescriptor, GfxInputLayoutDescriptor, GfxInputLayout, GfxVertexBufferDescriptor, GfxInputState, GfxRenderPipelineDescriptor, GfxRenderPipeline, GfxSampler, GfxProgram, GfxBindings, GfxWrapMode, GfxTexFilterMode, GfxMipFilterMode, GfxDebugGroup, GfxPass, GfxRenderPassDescriptor, GfxRenderPass, GfxDeviceLimits, GfxFormat, GfxVendorInfo, GfxTextureDimension, GfxBindingLayoutDescriptor, GfxPrimitiveTopology, GfxMegaStateDescriptor, GfxCullMode, GfxFrontFaceMode, GfxAttachmentState, GfxChannelBlendState, GfxBlendFactor, GfxBlendMode, GfxCompareMode, GfxVertexBufferFrequency, GfxIndexBufferDescriptor, GfxProgramDescriptorSimple, GfxRenderTarget, GfxRenderTargetDescriptor, makeTextureDescriptor2D, GfxClipSpaceNearZ, GfxTextureUsage } from "./GfxPlatform";
 import { _T, GfxResource, GfxReadback } from "./GfxPlatformImpl";
 import { assertExists, assert, leftPad, align } from "./GfxPlatformUtil";
 import glslang, { ShaderStage, Glslang } from '../../vendor/glslang/glslang';
@@ -791,17 +791,12 @@ class GfxImplP_WebGPU implements GfxSwapChain, GfxDevice {
         program.fragmentStage = await this._createShaderStage(deviceProgram.preprocessedFrag, 'fragment');
     }
 
-    public createProgramSimple(deviceProgram: GfxProgramDescriptorSimple): GfxProgram {
+    public createProgram(deviceProgram: GfxProgramDescriptorSimple): GfxProgram {
         const vertexStage: GPUProgrammableStage | null = null;
         const fragmentStage: GPUProgrammableStage | null = null;
         const program: GfxProgramP_WebGPU = { _T: _T.Program, ResourceUniqueId: this.getNextUniqueId(), descriptor: deviceProgram, vertexStage, fragmentStage };
         this._createProgram(program);
         return program;
-    }
-
-    public createProgram(descriptor: GfxProgramDescriptor): GfxProgram {
-        descriptor.ensurePreprocessed(this);
-        return this.createProgramSimple(descriptor);
     }
 
     private _createBindGroupLayout(bindingLayout: GfxBindingLayoutDescriptor): GPUBindGroupLayout[] {

@@ -1,5 +1,5 @@
 
-import { GfxBufferUsage, GfxBindingLayoutDescriptor, GfxBufferFrequencyHint, GfxTexFilterMode, GfxMipFilterMode, GfxPrimitiveTopology, GfxSwapChain, GfxDevice, GfxSamplerDescriptor, GfxWrapMode, GfxVertexBufferDescriptor, GfxRenderPipelineDescriptor, GfxBufferBinding, GfxSamplerBinding, GfxDeviceLimits, GfxVertexAttributeDescriptor, GfxRenderPass, GfxPass, GfxMegaStateDescriptor, GfxCompareMode, GfxBlendMode, GfxCullMode, GfxBlendFactor, GfxVertexBufferFrequency, GfxRenderPassDescriptor, GfxTextureDescriptor, GfxTextureDimension, makeTextureDescriptor2D, GfxBindingsDescriptor, GfxDebugGroup, GfxInputLayoutDescriptor, GfxAttachmentState, GfxChannelWriteMask, GfxPlatformFramebuffer, GfxVendorInfo, GfxInputLayoutBufferDescriptor, GfxIndexBufferDescriptor, GfxChannelBlendState, GfxProgramDescriptor, GfxProgramDescriptorSimple, GfxRenderTargetDescriptor, GfxClipSpaceNearZ } from './GfxPlatform';
+import { GfxBufferUsage, GfxBindingLayoutDescriptor, GfxBufferFrequencyHint, GfxTexFilterMode, GfxMipFilterMode, GfxPrimitiveTopology, GfxSwapChain, GfxDevice, GfxSamplerDescriptor, GfxWrapMode, GfxVertexBufferDescriptor, GfxRenderPipelineDescriptor, GfxBufferBinding, GfxSamplerBinding, GfxDeviceLimits, GfxVertexAttributeDescriptor, GfxRenderPass, GfxPass, GfxMegaStateDescriptor, GfxCompareMode, GfxBlendMode, GfxCullMode, GfxBlendFactor, GfxVertexBufferFrequency, GfxRenderPassDescriptor, GfxTextureDescriptor, GfxTextureDimension, makeTextureDescriptor2D, GfxBindingsDescriptor, GfxDebugGroup, GfxInputLayoutDescriptor, GfxAttachmentState, GfxChannelWriteMask, GfxPlatformFramebuffer, GfxVendorInfo, GfxInputLayoutBufferDescriptor, GfxIndexBufferDescriptor, GfxChannelBlendState, GfxProgramDescriptorSimple, GfxRenderTargetDescriptor, GfxClipSpaceNearZ } from './GfxPlatform';
 import { _T, GfxBuffer, GfxTexture, GfxRenderTarget, GfxSampler, GfxProgram, GfxInputLayout, GfxInputState, GfxRenderPipeline, GfxBindings, GfxResource, GfxReadback } from "./GfxPlatformImpl";
 import { GfxFormat, getFormatCompByteSize, FormatTypeFlags, FormatCompFlags, FormatFlags, getFormatTypeFlags, getFormatCompFlags, getFormatFlags, getFormatByteSize } from "./GfxPlatformFormat";
 
@@ -1057,16 +1057,11 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
         return program;
     }
 
-    public createProgramSimple(descriptor: GfxProgramDescriptor): GfxProgramP_GL {
+    public createProgram(descriptor: GfxProgramDescriptorSimple): GfxProgramP_GL {
         const program = this._createProgram(descriptor);
         if (this._resourceCreationTracker !== null)
             this._resourceCreationTracker.trackResourceCreated(program);
         return program;
-    }
-
-    public createProgram(descriptor: GfxProgramDescriptor): GfxProgram {
-        descriptor.ensurePreprocessed(this.queryVendorInfo());
-        return this.createProgramSimple(descriptor);
     }
 
     public createBindings(descriptor: GfxBindingsDescriptor): GfxBindings {
@@ -1663,7 +1658,7 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
 
         const prog = program.gl_program!;
         if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-            const descriptor = program.descriptor as GfxProgramDescriptor;
+            const descriptor = program.descriptor;
 
             if (!this._reportShaderError(program.gl_shader_vert!, descriptor.preprocessedVert))
                 return;
