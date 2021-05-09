@@ -681,12 +681,12 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
         this._scPlatformFramebuffer = nullify(platformFramebuffer);
     }
 
-    public getCanvas(): HTMLCanvasElement | OffscreenCanvas {
-        return this.gl.canvas;
-    }
-
     public getDevice(): GfxDevice {
         return this;
+    }
+
+    public getCanvas(): HTMLCanvasElement | OffscreenCanvas {
+        return this.gl.canvas;
     }
 
     public getOnscreenTexture(): GfxTexture {
