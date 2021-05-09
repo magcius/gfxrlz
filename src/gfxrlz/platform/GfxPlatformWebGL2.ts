@@ -1,5 +1,5 @@
 
-import { GfxBufferUsage, GfxBindingLayoutDescriptor, GfxBufferFrequencyHint, GfxTexFilterMode, GfxMipFilterMode, GfxPrimitiveTopology, GfxSwapChain, GfxDevice, GfxSamplerDescriptor, GfxWrapMode, GfxVertexBufferDescriptor, GfxRenderPipelineDescriptor, GfxBufferBinding, GfxSamplerBinding, GfxDeviceLimits, GfxVertexAttributeDescriptor, GfxRenderPass, GfxPass, GfxMegaStateDescriptor, GfxCompareMode, GfxBlendMode, GfxCullMode, GfxBlendFactor, GfxVertexBufferFrequency, GfxRenderPassDescriptor, GfxTextureDescriptor, GfxTextureDimension, makeTextureDescriptor2D, GfxBindingsDescriptor, GfxDebugGroup, GfxInputLayoutDescriptor, GfxAttachmentState, GfxChannelWriteMask, GfxPlatformFramebuffer, GfxVendorInfo, GfxInputLayoutBufferDescriptor, GfxIndexBufferDescriptor, GfxChannelBlendState, GfxProgramDescriptorSimple, GfxRenderTargetDescriptor, GfxClipSpaceNearZ } from './GfxPlatform';
+import { GfxBufferUsage, GfxBindingLayoutDescriptor, GfxBufferFrequencyHint, GfxTexFilterMode, GfxMipFilterMode, GfxPrimitiveTopology, GfxSwapChain, GfxDevice, GfxSamplerDescriptor, GfxWrapMode, GfxVertexBufferDescriptor, GfxRenderPipelineDescriptor, GfxBufferBinding, GfxSamplerBinding, GfxDeviceLimits, GfxVertexAttributeDescriptor, GfxRenderPass, GfxPass, GfxMegaStateDescriptor, GfxCompareMode, GfxBlendMode, GfxCullMode, GfxBlendFactor, GfxVertexBufferFrequency, GfxRenderPassDescriptor, GfxTextureDescriptor, GfxTextureDimension, makeTextureDescriptor2D, GfxBindingsDescriptor, GfxDebugGroup, GfxInputLayoutDescriptor, GfxAttachmentState, GfxChannelWriteMask, GfxPlatformFramebuffer, GfxVendorInfo, GfxInputLayoutBufferDescriptor, GfxIndexBufferDescriptor, GfxChannelBlendState, GfxProgramDescriptorSimple, GfxRenderTargetDescriptor, GfxClipSpaceNearZ, GfxColor } from './GfxPlatform';
 import { _T, GfxBuffer, GfxTexture, GfxRenderTarget, GfxSampler, GfxProgram, GfxInputLayout, GfxInputState, GfxRenderPipeline, GfxBindings, GfxResource, GfxReadback } from "./GfxPlatformImpl";
 import { GfxFormat, getFormatCompByteSize, FormatTypeFlags, FormatCompFlags, FormatFlags, getFormatTypeFlags, getFormatCompFlags, getFormatFlags, getFormatByteSize } from "./GfxPlatformFormat";
 
@@ -325,7 +325,31 @@ class GfxRenderPassP_GL implements GfxRenderPass {
     public po(r: any) { this.o.push(r); }
 
     public end() { this.pcmd(RenderPassCmd.end); }
-    public setRenderPassParameters(ca: GfxRenderTarget | null, cr: GfxTexture | null, dsa: GfxRenderTarget | null, dsr: GfxTexture | null, c: number, r: number, g: number, b: number, a: number, d: number, s: number) { this.pcmd(RenderPassCmd.setRenderPassParameters); this.pu32(ca !== null ? 1 : 0); if (ca !== null) { this.po(ca); this.po(cr); } this.po(dsa); this.po(dsr); this.pu32(c); this.pf32(r); this.pf32(g); this.pf32(b); this.pf32(a); this.pf32(d); this.pf32(s); }
+    public setRenderPassParameters(ca: (GfxRenderTarget | null)[], cr: (GfxTexture | null)[], cc: (GfxColor | 'load')[], dsa: GfxRenderTarget | null, dsr: GfxTexture | null, d: number, s: number) {
+        this.pcmd(RenderPassCmd.setRenderPassParameters);
+        this.pu32(ca.length);
+
+        for (let i = 0; i < ca.length; i++) {
+            this.po(ca[i]);
+            this.po(cr[i]);
+            const c = cc[i];
+            if (c !== 'load') {
+                this.pu32(1);
+                this.pf32(c.r);
+                this.pf32(c.g);
+                this.pf32(c.b);
+                this.pf32(c.a);
+            } else {
+                this.pu32(0);
+            }
+        }
+
+        this.po(dsa);
+        this.po(dsr);
+        this.pf32(d);
+        this.pf32(s);
+    }
+
     public setViewport(x: number, y: number, w: number, h: number) { this.pcmd(RenderPassCmd.setViewport); this.pf32(x); this.pf32(y); this.pf32(w); this.pf32(h); }
     public setScissor(x: number, y: number, w: number, h: number)  { this.pcmd(RenderPassCmd.setScissor); this.pf32(x); this.pf32(y); this.pf32(w); this.pf32(h); }
     public setPipeline(r: GfxRenderPipeline)      { this.pcmd(RenderPassCmd.setPipeline); this.po(r); }
@@ -993,17 +1017,21 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
         const gl_sampler = this.ensureResourceExists(gl.createSampler());
         gl.samplerParameteri(gl_sampler, gl.TEXTURE_WRAP_S, translateWrapMode(descriptor.wrapS));
         gl.samplerParameteri(gl_sampler, gl.TEXTURE_WRAP_T, translateWrapMode(descriptor.wrapT));
-        // TODO(jstpierre): Expose this as a sampler parameter.
-        gl.samplerParameteri(gl_sampler, gl.TEXTURE_WRAP_R, WebGL2RenderingContext.CLAMP_TO_EDGE);
+        gl.samplerParameteri(gl_sampler, gl.TEXTURE_WRAP_R, translateWrapMode(descriptor.wrapQ ?? descriptor.wrapS));
         gl.samplerParameteri(gl_sampler, gl.TEXTURE_MIN_FILTER, translateFilterMode(descriptor.minFilter, descriptor.mipFilter));
         gl.samplerParameteri(gl_sampler, gl.TEXTURE_MAG_FILTER, translateFilterMode(descriptor.magFilter, GfxMipFilterMode.NoMip));
-        gl.samplerParameterf(gl_sampler, gl.TEXTURE_MIN_LOD, descriptor.minLOD);
-        gl.samplerParameterf(gl_sampler, gl.TEXTURE_MAX_LOD, descriptor.maxLOD);
-        // TODO(jstpierre): Expose this as a sampler parameter.
-        if (this._EXT_texture_filter_anisotropic !== null) {
-            const maxAnisotropy = (descriptor.minFilter === GfxTexFilterMode.Bilinear && descriptor.magFilter === GfxTexFilterMode.Bilinear && descriptor.mipFilter === GfxMipFilterMode.Linear) ? 16 : 1;
+
+        if (descriptor.minLOD !== undefined)
+            gl.samplerParameterf(gl_sampler, gl.TEXTURE_MIN_LOD, descriptor.minLOD);
+        if (descriptor.maxLOD !== undefined)
+            gl.samplerParameterf(gl_sampler, gl.TEXTURE_MAX_LOD, descriptor.maxLOD);
+
+        const maxAnisotropy = descriptor.maxAnisotropy ?? 1;
+        if (maxAnisotropy > 1 && this._EXT_texture_filter_anisotropic !== null) {
+            assert(descriptor.minFilter === GfxTexFilterMode.Bilinear && descriptor.magFilter === GfxTexFilterMode.Bilinear && descriptor.mipFilter === GfxMipFilterMode.Linear);
             gl.samplerParameterf(gl_sampler, this._EXT_texture_filter_anisotropic.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
         }
+
         const sampler: GfxSamplerP_GL = { _T: _T.Sampler, ResourceUniqueId: this.getNextUniqueId(), gl_sampler };
         if (this._resourceCreationTracker !== null)
             this._resourceCreationTracker.trackResourceCreated(sampler);
@@ -1262,40 +1290,21 @@ class GfxImplP_GL implements GfxSwapChain, GfxDevice {
 
         const { colorAttachment, colorClearColor, colorResolveTo, depthStencilAttachment, depthClearValue, stencilClearValue, depthStencilResolveTo } = descriptor;
 
-        let colorClearColorR = 0;
-        let colorClearColorG = 0;
-        let colorClearColorB = 0;
-        let colorClearColorA = 0;
-        let clearBits: number = 0;
-        if (colorAttachment !== null) {
-            if (colorClearColor !== 'load') {
-                clearBits |= WebGL2RenderingContext.COLOR_BUFFER_BIT;
-                colorClearColorR = colorClearColor.r;
-                colorClearColorG = colorClearColor.g;
-                colorClearColorB = colorClearColor.b;
-                colorClearColorA = colorClearColor.a;
-            }
-        }
-
-        let depthClearValueF = 0;
-        let stencilClearValueF = 0;
+        let depthClearValueF = -1;
+        let stencilClearValueF = -1;
         if (depthStencilAttachment !== null) {
             const attachment = depthStencilAttachment as GfxRenderTargetP_GL;
             const flags = getFormatFlags(attachment.pixelFormat);
-            if (!!(flags & FormatFlags.Depth) && depthClearValue !== 'load') {
-                clearBits |= WebGL2RenderingContext.DEPTH_BUFFER_BIT;
+            if (!!(flags & FormatFlags.Depth) && depthClearValue !== 'load')
                 depthClearValueF = depthClearValue;
-            }
-            if (!!(flags & FormatFlags.Stencil) && stencilClearValue !== 'load') {
-                clearBits |= WebGL2RenderingContext.STENCIL_BUFFER_BIT;
-                depthClearValueF = stencilClearValue;
-            }
+            if (!!(flags & FormatFlags.Stencil) && stencilClearValue !== 'load')
+                stencilClearValueF = stencilClearValue;
         }
 
         // TODO(jstpierre): This isn't kosher.
         pass.descriptor = descriptor;
 
-        pass.setRenderPassParameters(colorAttachment, colorResolveTo, depthStencilAttachment, depthStencilResolveTo, clearBits, colorClearColorR, colorClearColorG, colorClearColorB, colorClearColorA, depthClearValueF, stencilClearValueF);
+        pass.setRenderPassParameters(colorAttachment, colorResolveTo, colorClearColor, depthStencilAttachment, depthStencilResolveTo, depthClearValueF, stencilClearValueF);
         return pass;
     }
 

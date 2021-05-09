@@ -86,7 +86,7 @@ class HelloGfxPlatform {
         ];
 
         const program = new HelloTriangleProgram();
-        this.program = this.device.createProgramSimple(preprocessProgramObj_GLSL(this.device, program));
+        this.program = this.device.createProgram(preprocessProgramObj_GLSL(this.device, program));
 
         this.renderPipeline = this.device.createRenderPipeline({
             topology: GfxPrimitiveTopology.Triangles,
@@ -181,9 +181,9 @@ class Main {
 
     public run(): void {
         const renderPass = this.device.createRenderPass({
-            colorAttachment: this.renderTarget,
-            colorResolveTo: this.swapchain.getOnscreenTexture(),
-            colorClearColor: { r: 0, g: 0, b: 0, a: 1 },
+            colorAttachment: [this.renderTarget],
+            colorResolveTo: [this.swapchain.getOnscreenTexture()],
+            colorClearColor: [{ r: 0, g: 0, b: 0, a: 1 }],
 
             depthStencilAttachment: null,
             depthStencilResolveTo: null,
