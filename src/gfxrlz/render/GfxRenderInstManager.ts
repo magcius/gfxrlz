@@ -454,14 +454,25 @@ export class GfxRenderInst {
     }
 
     private setAttachmentFormatsFromRenderPass(device: GfxDevice, passRenderer: GfxRenderPass): void {
+
         const passDescriptor = device.queryRenderPass(passRenderer);
 
-        const colorAttachmentDescriptor = passDescriptor.colorAttachment !== null ? device.queryRenderTarget(passDescriptor.colorAttachment[0]) : null;
-        const depthStencilAttachmentDescriptor = passDescriptor.depthStencilAttachment !== null ? device.queryRenderTarget(passDescriptor.depthStencilAttachment) : null;
+        let sampleCount = -1;
+        for (let i = 0; i < passDescriptor.colorAttachment.length; i++) {
+            const colorAttachmentDescriptor = passDescriptor.colorAttachment[i] !== null ? device.queryRenderTarget(passDescriptor.colorAttachment[i]!) : null;
+            this._renderPipelineDescriptor.colorAttachmentFormats[i] = colorAttachmentDescriptor !== null ? colorAttachmentDescriptor.pixelFormat : null;
+            if (colorAttachmentDescriptor !== null) {
+                if (sampleCount === -1)
+                    sampleCount = colorAttachmentDescriptor.sampleCount;
+                else
+                    assert(sampleCount === colorAttachmentDescriptor.sampleCount);
+            }
+        }
 
-        this._renderPipelineDescriptor.colorAttachmentFormats[0] = colorAttachmentDescriptor !== null ? colorAttachmentDescriptor.pixelFormat : null;
+        const depthStencilAttachmentDescriptor = passDescriptor.depthStencilAttachment !== null ? device.queryRenderTarget(passDescriptor.depthStencilAttachment) : null;
         this._renderPipelineDescriptor.depthStencilAttachmentFormat = depthStencilAttachmentDescriptor !== null ? depthStencilAttachmentDescriptor.pixelFormat : null;
-        this._renderPipelineDescriptor.sampleCount = colorAttachmentDescriptor !== null ? colorAttachmentDescriptor.sampleCount : depthStencilAttachmentDescriptor !== null ? depthStencilAttachmentDescriptor.sampleCount : 0;
+
+        this._renderPipelineDescriptor.sampleCount = sampleCount;
     }
 
     public drawOnPass(cache: GfxRenderCache, passRenderer: GfxRenderPass): boolean {
