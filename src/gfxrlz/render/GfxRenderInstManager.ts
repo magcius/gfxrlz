@@ -454,7 +454,6 @@ export class GfxRenderInst {
     }
 
     private setAttachmentFormatsFromRenderPass(device: GfxDevice, passRenderer: GfxRenderPass): void {
-
         const passDescriptor = device.queryRenderPass(passRenderer);
 
         let sampleCount = -1;
@@ -480,8 +479,13 @@ export class GfxRenderInst {
         this.setAttachmentFormatsFromRenderPass(device, passRenderer);
 
         const gfxPipeline = cache.createRenderPipeline(this._renderPipelineDescriptor);
-        if (!!(this._flags & GfxRenderInstFlags.AllowSkippingIfPipelineNotReady) && !device.queryPipelineReady(gfxPipeline))
-            return false;
+
+        const pipelineReady = device.queryPipelineReady(gfxPipeline);
+        if (!pipelineReady) {
+            const needsToSkip = !device.queryVendorInfo().supportsSyncPipelineCompilation;
+            if (needsToSkip || !!(this._flags & GfxRenderInstFlags.AllowSkippingIfPipelineNotReady))
+                return false;
+        }
 
         if (SET_DEBUG_POINTER)
             passRenderer.setDebugPointer(this);
@@ -491,7 +495,7 @@ export class GfxRenderInst {
         passRenderer.setInputState(this._inputState);
 
         for (let i = 0; i < this._bindingDescriptors[0].uniformBufferBindings.length; i++)
-            this._bindingDescriptors[0].uniformBufferBindings[i].buffer = this._uniformBuffer.gfxBuffer!;
+            this._bindingDescriptors[0].uniformBufferBindings[i].buffer = assertExists(this._uniformBuffer.gfxBuffer);
 
         // TODO(jstpierre): Support multiple binding descriptors.
         const gfxBindings = cache.createBindings(this._bindingDescriptors[0]);

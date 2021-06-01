@@ -258,6 +258,11 @@ export interface GfxDebugGroup {
     triangleCount: number;
 }
 
+export const enum GfxViewportOrigin {
+    LowerLeft,
+    UpperLeft,
+}
+
 export const enum GfxClipSpaceNearZ {
     NegativeOne,
     Zero,
@@ -268,7 +273,9 @@ export interface GfxVendorInfo {
     readonly glslVersion: string;
     readonly explicitBindingLocations: boolean;
     readonly separateSamplerTextures: boolean;
+    readonly viewportOrigin: GfxViewportOrigin;
     readonly clipSpaceNearZ: GfxClipSpaceNearZ;
+    readonly supportsSyncPipelineCompilation: boolean;
 }
 
 export type GfxPlatformFramebuffer = WebGLFramebuffer;
