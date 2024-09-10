@@ -6,10 +6,11 @@
   "author": "Jasper St. Pierre",
   "license": "MIT",
   "dependencies": {
-    "@webgpu/types": "^0.1.2",
     "gl-matrix": "^3.3.0"
   },
   "devDependencies": {
-    "typescript": "^4.2.4"
+    "@webgpu/types": "^0.1.44",
+    "@types/webxr": "^0.5.20",
+    "typescript": "^5.6.2"
   }
 }

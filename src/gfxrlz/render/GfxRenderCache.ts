@@ -1,16 +1,16 @@
 
-import { GfxBindingsDescriptor, GfxBindings, GfxDevice, GfxRenderPipelineDescriptor, GfxRenderPipeline, GfxProgram, GfxInputLayoutDescriptor, GfxInputLayout, GfxSamplerDescriptor, GfxSampler, GfxProgramDescriptorSimple, GfxBindingLayoutDescriptor, GfxMegaStateDescriptor, GfxColor, GfxAttachmentState, GfxChannelBlendState, GfxVendorInfo } from "../platform/GfxPlatform";
-import { gfxBindingsDescriptorCopy, gfxRenderPipelineDescriptorCopy, gfxBindingsDescriptorEquals, gfxRenderPipelineDescriptorEquals, gfxInputLayoutDescriptorEquals, gfxSamplerDescriptorEquals, gfxInputLayoutDescriptorCopy } from '../platform/GfxPlatformUtil';
-import { HashMap, nullHashFunc, hashCodeNumberFinish, hashCodeNumberUpdate } from "../../HashMap";
-import { assert } from "../platform/GfxPlatformUtil";
+import { GfxBindingsDescriptor, GfxBindings, GfxDevice, GfxRenderPipelineDescriptor, GfxRenderPipeline, GfxProgram, GfxInputLayoutDescriptor, GfxInputLayout, GfxSamplerDescriptor, GfxSampler, GfxProgramDescriptor, GfxBindingLayoutDescriptor, GfxMegaStateDescriptor, GfxColor, GfxAttachmentState, GfxChannelBlendState } from "../platform/GfxPlatform.js";
+import { gfxBindingsDescriptorCopy, gfxRenderPipelineDescriptorCopy, gfxBindingsDescriptorEquals, gfxRenderPipelineDescriptorEquals, gfxInputLayoutDescriptorEquals, gfxSamplerDescriptorEquals, gfxInputLayoutDescriptorCopy } from '../platform/GfxPlatformObjUtil.js';
+import { HashMap, nullHashFunc, hashCodeNumberFinish, hashCodeNumberUpdate } from "../../HashMap.js";
+import { assert } from "../platform/GfxPlatformUtil.js";
 
-function gfxProgramDescriptorSimpleEquals(a: GfxProgramDescriptorSimple, b: GfxProgramDescriptorSimple): boolean {
+function gfxProgramDescriptorEquals(a: GfxProgramDescriptor, b: GfxProgramDescriptor): boolean {
     assert(a.preprocessedVert !== '' && b.preprocessedVert !== '');
     assert(a.preprocessedFrag !== '' && b.preprocessedFrag !== '');
     return a.preprocessedVert === b.preprocessedVert && a.preprocessedFrag === b.preprocessedFrag;
 }
 
-function gfxProgramDescriptorSimpleCopy(a: GfxProgramDescriptorSimple): GfxProgramDescriptorSimple {
+function gfxProgramDescriptorCopy(a: GfxProgramDescriptor): GfxProgramDescriptor {
     const preprocessedVert = a.preprocessedVert;
     const preprocessedFrag = a.preprocessedFrag;
     return { preprocessedVert, preprocessedFrag };
@@ -53,6 +53,7 @@ function gfxMegaStateDescriptorHash(hash: number, a: GfxMegaStateDescriptor): nu
     hash = hashCodeNumberUpdate(hash, a.cullMode);
     hash = hashCodeNumberUpdate(hash, a.frontFace ? 1 : 0);
     hash = hashCodeNumberUpdate(hash, a.polygonOffset ? 1 : 0);
+    hash = hashCodeNumberUpdate(hash, a.wireframe ? 1 : 0);
     return hash;
 }
 
@@ -87,16 +88,17 @@ function gfxBindingsDescriptorHash(a: GfxBindingsDescriptor): number {
     return hashCodeNumberFinish(hash);
 }
 
-interface GfxProgramDescriptor extends GfxProgramDescriptorSimple {
-    ensurePreprocessed(vendorInfo: GfxVendorInfo): void;
-    associate(device: GfxDevice, program: GfxProgram): void;
+interface Expiry {
+    expireFrameNum: number;
 }
 
+interface ExpiryBindings extends GfxBindings, Expiry {}
+
 export class GfxRenderCache {
-    private gfxBindingsCache = new HashMap<GfxBindingsDescriptor, GfxBindings>(gfxBindingsDescriptorEquals, gfxBindingsDescriptorHash);
+    private gfxBindingsCache = new HashMap<GfxBindingsDescriptor, ExpiryBindings>(gfxBindingsDescriptorEquals, gfxBindingsDescriptorHash);
     private gfxRenderPipelinesCache = new HashMap<GfxRenderPipelineDescriptor, GfxRenderPipeline>(gfxRenderPipelineDescriptorEquals, gfxRenderPipelineDescriptorHash);
     private gfxInputLayoutsCache = new HashMap<GfxInputLayoutDescriptor, GfxInputLayout>(gfxInputLayoutDescriptorEquals, nullHashFunc);
-    private gfxProgramCache = new HashMap<GfxProgramDescriptorSimple, GfxProgram>(gfxProgramDescriptorSimpleEquals, nullHashFunc);
+    private gfxProgramCache = new HashMap<GfxProgramDescriptor, GfxProgram>(gfxProgramDescriptorEquals, nullHashFunc);
     private gfxSamplerCache = new HashMap<GfxSamplerDescriptor, GfxSampler>(gfxSamplerDescriptorEquals, nullHashFunc);
 
     constructor(public device: GfxDevice) {
@@ -106,9 +108,10 @@ export class GfxRenderCache {
         let bindings = this.gfxBindingsCache.get(descriptor);
         if (bindings === null) {
             const descriptorCopy = gfxBindingsDescriptorCopy(descriptor);
-            bindings = this.device.createBindings(descriptorCopy);
+            bindings = this.device.createBindings(descriptorCopy) as ExpiryBindings;
             this.gfxBindingsCache.add(descriptorCopy, bindings);
         }
+        bindings.expireFrameNum = 4;
         return bindings;
     }
 
@@ -132,28 +135,15 @@ export class GfxRenderCache {
         return inputLayout;
     }
 
-    public createProgramSimple(gfxProgramDescriptorSimple: GfxProgramDescriptorSimple): GfxProgram {
+    public createProgram(gfxProgramDescriptorSimple: GfxProgramDescriptor): GfxProgram {
         let program = this.gfxProgramCache.get(gfxProgramDescriptorSimple);
         if (program === null) {
-            const descriptorCopy = gfxProgramDescriptorSimpleCopy(gfxProgramDescriptorSimple);
+            const descriptorCopy = gfxProgramDescriptorCopy(gfxProgramDescriptorSimple);
             program = this.device.createProgram(descriptorCopy);
             this.gfxProgramCache.add(descriptorCopy, program);
-
-            // TODO(jstpierre): Ugliness
-            if ('associate' in (gfxProgramDescriptorSimple as any)) {
-                const gfxProgramDescriptor = gfxProgramDescriptorSimple as GfxProgramDescriptor;
-                gfxProgramDescriptor.associate(this.device, program);
-                (descriptorCopy as any).orig = gfxProgramDescriptor;
-            }
         }
 
         return program;
-    }
-
-    public createProgram(gfxProgramDescriptor: GfxProgramDescriptor): GfxProgram {
-        // TODO(jstpierre): Remove the ensurePreprocessed here... this should be done by higher-level code.
-        gfxProgramDescriptor.ensurePreprocessed(this.device.queryVendorInfo());
-        return this.createProgramSimple(gfxProgramDescriptor);
     }
 
     public createSampler(descriptor: GfxSamplerDescriptor): GfxSampler {
@@ -167,6 +157,15 @@ export class GfxRenderCache {
 
     public numBindings(): number {
         return this.gfxBindingsCache.size();
+    }
+
+    public prepareToRender(): void {
+        for (const [key, value] of this.gfxBindingsCache.items()) {
+            if (--value.expireFrameNum <= 0) {
+                this.gfxBindingsCache.delete(key);
+                this.device.destroyBindings(value);
+            }
+        }
     }
 
     public destroy(): void {

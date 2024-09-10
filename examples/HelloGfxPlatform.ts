@@ -3,12 +3,12 @@
 
 import { mat4 } from "gl-matrix";
 
-import { createSwapChainForWebGL2, GfxPlatformWebGL2Config } from "gfxrlz/platform/GfxPlatformWebGL2";
-import { GfxSwapChain, GfxDevice, GfxBuffer, GfxInputLayout, GfxInputState, GfxBufferUsage, GfxFormat, GfxVertexBufferFrequency, GfxProgram, GfxClipSpaceNearZ, GfxRenderPass, GfxBindings, GfxBufferFrequencyHint, GfxRenderPipeline, GfxPrimitiveTopology, GfxBindingLayoutDescriptor, GfxRenderTarget } from "gfxrlz/platform/GfxPlatform";
-import { projectionMatrixConvertClipSpaceNearZ } from "gfxrlz/helpers/ProjectionHelpers";
-import { makeStaticDataBuffer } from "gfxrlz/helpers/BufferHelpers";
-import { fillMatrix4x4 } from "gfxrlz/helpers/UniformBufferHelpers";
-import { preprocessProgramObj_GLSL } from "gfxrlz/shaderc/GfxShaderCompiler";
+import { createSwapChainForWebGL2, GfxPlatformWebGL2Config } from "gfxrlz/src/gfxrlz/platform/GfxPlatformWebGL2";
+import { GfxSwapChain, GfxDevice, GfxBuffer, GfxInputLayout, GfxBufferUsage, GfxFormat, GfxVertexBufferFrequency, GfxProgram, GfxClipSpaceNearZ, GfxRenderPass, GfxBindings, GfxBufferFrequencyHint, GfxRenderPipeline, GfxPrimitiveTopology, GfxBindingLayoutDescriptor, GfxRenderTarget } from "gfxrlz/src/gfxrlz/platform/GfxPlatform";
+import { projectionMatrixConvertClipSpaceNearZ } from "gfxrlz/src/gfxrlz/helpers/ProjectionHelpers";
+import { makeStaticDataBuffer } from "gfxrlz/src/gfxrlz/helpers/BufferHelpers";
+import { fillMatrix4x4 } from "gfxrlz/src/gfxrlz/helpers/UniformBufferHelpers";
+import { preprocessProgramObj_GLSL } from "gfxrlz/src/gfxrlz/shaderc/GfxShaderCompiler";
 import { defaultMegaState } from "gfxrlz/src/gfxrlz/helpers/GfxMegaStateDescriptorHelpers";
 
 class HelloTriangleProgram {
@@ -45,7 +45,6 @@ class HelloGfxPlatform {
     // Triangle data.
     private vertexBuffer: GfxBuffer;
     private inputLayout: GfxInputLayout;
-    private inputState: GfxInputState;
 
     // Rendering data.
     private program: GfxProgram;
@@ -75,11 +74,6 @@ class HelloGfxPlatform {
             ],
             indexBufferFormat: null,
         });
-
-        this.inputState = device.createInputState(this.inputLayout,
-            [{ buffer: this.vertexBuffer, byteOffset: 0 }],
-            null,
-        );
 
         const bindingLayouts: GfxBindingLayoutDescriptor[] = [
             { numSamplers: 0, numUniformBuffers: 1 },
@@ -152,7 +146,7 @@ class HelloGfxPlatform {
 
         renderPass.setPipeline(this.renderPipeline);
         renderPass.setBindings(0, this.bindings, dynamicBufferOffsets);
-        renderPass.setInputState(this.inputState);
+        renderPass.setVertexInput(this.inputLayout, [{ buffer: this.vertexBuffer, byteOffset: 0 }], null);
         renderPass.draw(3, 0);
     }
 
@@ -181,14 +175,17 @@ class Main {
 
     public run(): void {
         const renderPass = this.device.createRenderPass({
-            colorAttachment: [this.renderTarget],
-            colorResolveTo: [this.swapchain.getOnscreenTexture()],
-            colorClearColor: [{ r: 0, g: 0, b: 0, a: 1 }],
+            colorAttachments: [{
+                renderTarget: this.renderTarget,
+                view: { level: 0, z: 0 },
+                resolveTo: this.swapchain.getOnscreenTexture(),
+                resolveView: { level: 0, z: 0 },
+                clearColor: { r: 0, g: 0, b: 0, a: 1 },
+                store: true,
+            }],
 
             depthStencilAttachment: null,
-            depthStencilResolveTo: null,
-            depthClearValue: 0,
-            stencilClearValue: 0,
+            occlusionQueryPool: null,
         });
         const timeInMilliseconds = window.performance.now();
         this.helloTriangle.renderToRenderPass(renderPass, timeInMilliseconds);

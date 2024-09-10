@@ -1,7 +1,8 @@
 
-import { GfxMegaStateDescriptor, GfxFrontFaceMode, GfxCullMode, GfxStencilOp, GfxCompareMode, GfxBlendFactor, GfxBlendMode, GfxAttachmentState, GfxChannelWriteMask, GfxChannelBlendState } from "../platform/GfxPlatform";
-import { reverseDepthForCompareMode } from "./ReversedDepthHelpers";
-import { fallbackUndefined, gfxColorCopy, gfxColorNewCopy } from "../platform/GfxPlatformUtil";
+import { GfxMegaStateDescriptor, GfxFrontFaceMode, GfxCullMode, GfxStencilOp, GfxCompareMode, GfxBlendFactor, GfxBlendMode, GfxAttachmentState, GfxChannelWriteMask, GfxChannelBlendState } from "../platform/GfxPlatform.js";
+import { reverseDepthForCompareMode } from "./ReversedDepthHelpers.js";
+import { fallbackUndefined } from "../platform/GfxPlatformUtil.js";
+import { gfxColorCopy, gfxColorNewCopy } from '../platform/GfxPlatformUtil.js';
 
 function copyChannelBlendState(dst: GfxChannelBlendState, src: GfxChannelBlendState): void {
     dst.blendDstFactor = src.blendDstFactor;
@@ -9,7 +10,7 @@ function copyChannelBlendState(dst: GfxChannelBlendState, src: GfxChannelBlendSt
     dst.blendMode = src.blendMode;
 }
 
-function copyAttachmentState(dst: GfxAttachmentState | undefined, src: GfxAttachmentState): GfxAttachmentState {
+export function copyAttachmentState(dst: GfxAttachmentState | undefined, src: GfxAttachmentState): GfxAttachmentState {
     if (dst === undefined) {
         dst = {
             rgbBlendState: {} as GfxChannelBlendState,
@@ -48,6 +49,7 @@ export function setMegaStateFlags(dst: GfxMegaStateDescriptor, src: Partial<GfxM
     dst.cullMode = fallbackUndefined(src.cullMode, dst.cullMode);
     dst.frontFace = fallbackUndefined(src.frontFace, dst.frontFace);
     dst.polygonOffset = fallbackUndefined(src.polygonOffset, dst.polygonOffset);
+    dst.wireframe = fallbackUndefined(src.wireframe, dst.wireframe);
 }
 
 export function copyMegaState(src: GfxMegaStateDescriptor): GfxMegaStateDescriptor {
@@ -119,12 +121,13 @@ export const defaultMegaState: GfxMegaStateDescriptor = {
     blendConstant: { r: 0, g: 0, b: 0, a: 0 },
     depthWrite: true,
     depthCompare: reverseDepthForCompareMode(GfxCompareMode.LessEqual),
-    stencilCompare: GfxCompareMode.Never,
+    stencilCompare: GfxCompareMode.Always,
     stencilWrite: false,
     stencilPassOp: GfxStencilOp.Keep,
     cullMode: GfxCullMode.None,
     frontFace: GfxFrontFaceMode.CCW,
     polygonOffset: false,
+    wireframe: false,
 };
 
 export const fullscreenMegaState = makeMegaState({ depthCompare: GfxCompareMode.Always, depthWrite: false }, defaultMegaState);

@@ -49,21 +49,46 @@ export const invlerp: string = `
 float invlerp(float a, float b, float v) { return (v - a) / (b - a); }
 `;
 
-// Vertex shader for indexbuffer-less full-screen triangle
-export const fullscreenVS: string = `
+export const MulNormalMatrix: string = `
+vec3 MulNormalMatrix(Mat4x3 t_Matrix, vec3 t_Value) {
+    // Pull out the squared scaling.
+    vec3 t_Col0 = Mat4x3GetCol0(t_Matrix);
+    vec3 t_Col1 = Mat4x3GetCol1(t_Matrix);
+    vec3 t_Col2 = Mat4x3GetCol2(t_Matrix);
+    vec3 t_SqScale = vec3(dot(t_Col0, t_Col0), dot(t_Col1, t_Col1), dot(t_Col2, t_Col2));
+    return normalize(Mul(t_Matrix, vec4(t_Value / t_SqScale, 0.0)));
+}
+`;
+
+export const CalcScaleBias: string = `
+vec2 CalcScaleBias(in vec2 t_Pos, in vec4 t_SB) {
+    return t_Pos.xy * t_SB.xy + t_SB.zw;
+}
+`;
+
+export function makeFullscreenVS(z: string = `1.0`, w: string = `1.0`): string {
+    return `
 out vec2 v_TexCoord;
 
 void main() {
     v_TexCoord.x = (gl_VertexID == 1) ? 2.0 : 0.0;
     v_TexCoord.y = (gl_VertexID == 2) ? 2.0 : 0.0;
     gl_Position.xy = v_TexCoord * vec2(2) - vec2(1);
-    gl_Position.zw = vec2(1, 1);
+    gl_Position.zw = vec2(${z}, ${w});
 
-#ifdef VIEWPORT_ORIGIN_TL
+#if GFX_CLIPSPACE_NEAR_ZERO()
+    gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5;
+#endif
+
+#if GFX_VIEWPORT_ORIGIN_TL()
     v_TexCoord.y = 1.0 - v_TexCoord.y;
 #endif
 }
 `;
+}
+
+// Vertex shader for indexbuffer-less full-screen triangle
+export const fullscreenVS: string = makeFullscreenVS();
 
 export const fullscreenBlitOneTexPS: string = `
 uniform sampler2D u_Texture;
@@ -74,10 +99,17 @@ void main() {
 }
 `;
 
-export const monochromeNTSC: string = `
+export const MonochromeNTSC: string = `
 float MonochromeNTSC(vec3 t_Color) {
-    // NTSC primaries.
+    // NTSC primaries. Note that this is designed for gamma-space values.
     return dot(t_Color.rgb, vec3(0.299, 0.587, 0.114));
+}
+`;
+
+export const MonochromeNTSCLinear: string = `
+float MonochromeNTSCLinear(vec3 t_Color) {
+    // NTSC primaries. Note that this is designed for linear-space values.
+    return dot(t_Color.rgb, vec3(0.2125, 0.7154, 0.0721));
 }
 `;
 

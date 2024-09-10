@@ -1,6 +1,6 @@
 
-import { GfxBuffer, GfxDevice, GfxBufferUsage, GfxBufferFrequencyHint } from "../platform/GfxPlatform";
-import { assert, assertExists, alignNonPowerOfTwo } from "../platform/GfxPlatformUtil";
+import { GfxBuffer, GfxDevice, GfxBufferUsage, GfxBufferFrequencyHint } from "../platform/GfxPlatform.js";
+import { assert, assertExists, alignNonPowerOfTwo } from "../platform/GfxPlatformUtil.js";
 
 // This is a very basic linear allocator. We allocate offsets in-order.
 export class GfxRenderDynamicUniformBuffer {
@@ -26,7 +26,7 @@ export class GfxRenderDynamicUniformBuffer {
 
     public allocateChunk(wordCount: number): number {
         wordCount = alignNonPowerOfTwo(wordCount, this.uniformBufferWordAlignment);
-        assert(wordCount < this.uniformBufferMaxPageWordSize);
+        assert(wordCount <= this.uniformBufferMaxPageWordSize);
 
         let wordOffset = this.currentWordOffset;
 
@@ -66,7 +66,7 @@ export class GfxRenderDynamicUniformBuffer {
      * it with the offset that was returned from {@see allocateChunk}.
      */
     public mapBufferF32(): Float32Array {
-        return assertExists(this.shadowBufferF32);
+        return this.shadowBufferF32!;
     }
 
     public prepareToRender(): void {

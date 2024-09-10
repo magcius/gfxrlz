@@ -2,7 +2,7 @@
 // Helpers to fill vertex buffers.
 
 import { ReadonlyVec3, ReadonlyVec4, ReadonlyMat4, ReadonlyMat2d } from "gl-matrix";
-import { GfxColor } from "../platform/GfxPlatform";
+import { GfxColor } from "../platform/GfxPlatform.js";
 
 export function fillVec3v(d: Float32Array, offs: number, v: ReadonlyVec3, v3: number = 0): number {
     d[offs + 0] = v[0];
@@ -28,11 +28,11 @@ export function fillVec4v(d: Float32Array, offs: number, v: ReadonlyVec4): numbe
     return 4;
 }
 
-export function fillColor(d: Float32Array, offs: number, c: Readonly<GfxColor>): number {
+export function fillColor(d: Float32Array, offs: number, c: Readonly<GfxColor>, a: number = c.a): number {
     d[offs + 0] = c.r;
     d[offs + 1] = c.g;
     d[offs + 2] = c.b;
-    d[offs + 3] = c.a;
+    d[offs + 3] = a;
     return 4;
 }
 

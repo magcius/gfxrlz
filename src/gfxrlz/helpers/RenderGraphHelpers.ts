@@ -1,17 +1,13 @@
 
-import { GfxRenderPassDescriptor, GfxColor, GfxFormat } from "../platform/GfxPlatform";
-import { reverseDepthForClearValue } from "./ReversedDepthHelpers";
-import { GfxrAttachmentSlot, GfxrRenderTargetDescription } from "../render/GfxRenderGraph";
+import { GfxColor, GfxFormat } from "../platform/GfxPlatform.js";
+import { reverseDepthForClearValue } from "./ReversedDepthHelpers.js";
+import { GfxrAttachmentClearDescriptor, GfxrAttachmentSlot, GfxrRenderTargetDescription } from "../render/GfxRenderGraph.js";
 
-export function makeClearRenderPassDescriptor(clearColor: Readonly<GfxColor> | 'load'): GfxRenderPassDescriptor {
+export function makeAttachmentClearDescriptor(clearColor: Readonly<GfxColor> | 'load'): GfxrAttachmentClearDescriptor {
     return {
-        colorAttachment: null,
-        colorResolveTo: null,
-        depthStencilAttachment: null,
-        colorClearColor: clearColor,
-        depthStencilResolveTo: null,
-        depthClearValue: reverseDepthForClearValue(1.0),
-        stencilClearValue: 0.0,
+        clearColor: clearColor,
+        clearDepth: reverseDepthForClearValue(1.0),
+        clearStencil: 0.0,
     }
 }
 
@@ -29,7 +25,7 @@ function selectFormatSimple(slot: GfxrAttachmentSlot): GfxFormat {
     if (slot === GfxrAttachmentSlot.Color0)
         return GfxFormat.U8_RGBA_RT;
     else if (slot === GfxrAttachmentSlot.DepthStencil)
-        return GfxFormat.D32F;
+        return GfxFormat.D24;
     else
         throw "whoops";
 }
@@ -46,16 +42,16 @@ export function setBackbufferDescSimple(desc: GfxrRenderTargetDescription, rende
     desc.setDimensions(renderInput.backbufferWidth, renderInput.backbufferHeight, sampleCount);
 }
 
-export function makeBackbufferDescSimple(slot: GfxrAttachmentSlot, renderInput: RenderInput, clearDescriptor: GfxRenderPassDescriptor): GfxrRenderTargetDescription {
+export function makeBackbufferDescSimple(slot: GfxrAttachmentSlot, renderInput: RenderInput, clearDescriptor: GfxrAttachmentClearDescriptor): GfxrRenderTargetDescription {
     const pixelFormat = selectFormatSimple(slot);
     const desc = new GfxrRenderTargetDescription(pixelFormat);
 
     setBackbufferDescSimple(desc, renderInput);
 
     if (clearDescriptor !== null) {
-        desc.colorClearColor = clearDescriptor.colorClearColor;
-        desc.depthClearValue = clearDescriptor.depthClearValue;
-        desc.stencilClearValue = clearDescriptor.stencilClearValue;
+        desc.clearColor = clearDescriptor.clearColor;
+        desc.clearDepth = clearDescriptor.clearDepth;
+        desc.clearStencil = clearDescriptor.clearStencil;
     }
 
     return desc;

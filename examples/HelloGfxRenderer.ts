@@ -3,15 +3,15 @@
 
 import { mat4 } from "gl-matrix";
 
-import { createSwapChainForWebGL2, GfxPlatformWebGL2Config } from "gfxrlz/platform/GfxPlatformWebGL2";
-import { GfxSwapChain, GfxDevice, GfxBuffer, GfxInputLayout, GfxInputState, GfxBufferUsage, GfxFormat, GfxVertexBufferFrequency, GfxProgram, GfxClipSpaceNearZ, GfxRenderPass, GfxBindings, GfxBufferFrequencyHint, GfxRenderPipeline, GfxPrimitiveTopology, GfxBindingLayoutDescriptor, GfxRenderTarget } from "gfxrlz/platform/GfxPlatform";
-import { projectionMatrixConvertClipSpaceNearZ } from "gfxrlz/helpers/ProjectionHelpers";
-import { GfxRenderCache } from "gfxrlz/render/GfxRenderCache";
-import { GfxRenderHelper } from "gfxrlz/render/GfxRenderHelper";
-import { GfxRendererLayer, GfxRenderInst, GfxRenderInstManager, makeSortKeyOpaque } from "gfxrlz/render/GfxRenderInstManager";
-import { makeStaticDataBuffer } from "gfxrlz/helpers/BufferHelpers";
-import { fillMatrix4x4 } from "gfxrlz/helpers/UniformBufferHelpers";
-import { preprocessProgramObj_GLSL } from "gfxrlz/shaderc/GfxShaderCompiler";
+import { createSwapChainForWebGL2, GfxPlatformWebGL2Config } from "gfxrlz/src/gfxrlz/platform/GfxPlatformWebGL2";
+import { GfxSwapChain, GfxDevice, GfxBuffer, GfxInputLayout, GfxBufferUsage, GfxFormat, GfxVertexBufferFrequency, GfxProgram, GfxClipSpaceNearZ, GfxRenderPass, GfxBindings, GfxBufferFrequencyHint, GfxRenderPipeline, GfxPrimitiveTopology, GfxBindingLayoutDescriptor, GfxRenderTarget } from "gfxrlz/src/gfxrlz/platform/GfxPlatform";
+import { projectionMatrixConvertClipSpaceNearZ } from "gfxrlz/src/gfxrlz/helpers/ProjectionHelpers";
+import { GfxRenderCache } from "gfxrlz/src/gfxrlz/render/GfxRenderCache";
+import { GfxRenderHelper } from "gfxrlz/src/gfxrlz/render/GfxRenderHelper";
+import { GfxRendererLayer, GfxRenderInst, GfxRenderInstList, GfxRenderInstManager, makeSortKeyOpaque } from "gfxrlz/src/gfxrlz/render/GfxRenderInstManager";
+import { makeStaticDataBuffer } from "gfxrlz/src/gfxrlz/helpers/BufferHelpers";
+import { fillMatrix4x4 } from "gfxrlz/src/gfxrlz/helpers/UniformBufferHelpers";
+import { preprocessProgramObj_GLSL } from "gfxrlz/src/gfxrlz/shaderc/GfxShaderCompiler";
 import { GfxrAttachmentSlot, GfxrRenderTargetDescription } from "gfxrlz/src/gfxrlz/render/GfxRenderGraph";
 
 class HelloTriangleProgram {
@@ -48,7 +48,6 @@ class HelloGfxRenderer {
     // Triangle data.
     private vertexBuffer: GfxBuffer;
     private inputLayout: GfxInputLayout;
-    private inputState: GfxInputState;
 
     // Rendering data.
     private program: GfxProgram;
@@ -76,13 +75,8 @@ class HelloGfxRenderer {
             indexBufferFormat: null,
         });
 
-        this.inputState = device.createInputState(this.inputLayout,
-            [{ buffer: this.vertexBuffer, byteOffset: 0 }],
-            null,
-        );
-
         const program = new HelloTriangleProgram();
-        this.program = cache.createProgramSimple(preprocessProgramObj_GLSL(device, program));
+        this.program = cache.createProgram(preprocessProgramObj_GLSL(device, program));
     }
 
     private _fillInAndUploadUBO(renderInst: GfxRenderInst, timeInMilliseconds: number): void {
@@ -123,9 +117,9 @@ class HelloGfxRenderer {
         renderInst.setBindingLayouts(bindingLayouts);
 
         renderInst.setGfxProgram(this.program);
-        renderInst.setInputLayoutAndState(this.inputLayout, this.inputState);
+        renderInst.setVertexInput(this.inputLayout, [{ buffer: this.vertexBuffer, byteOffset: 0 }], null);
         this._fillInAndUploadUBO(renderInst, timeInMilliseconds);
-        renderInst.drawPrimitives(3);
+        renderInst.setDrawCount(3);
 
         // Set the sort key, if desired.
         renderInst.sortKey = makeSortKeyOpaque(GfxRendererLayer.OPAQUE, this.program.ResourceUniqueId);
@@ -142,6 +136,7 @@ class HelloGfxRenderer {
 class Main {
     private device: GfxDevice;
     private renderHelper: GfxRenderHelper;
+    private renderList = new GfxRenderInstList();
     private helloTriangle: HelloGfxRenderer;
 
     constructor(private swapchain: GfxSwapChain) {
@@ -170,7 +165,7 @@ class Main {
 
         // Use the render graph to schedule our passes...
         const renderTarget = new GfxrRenderTargetDescription(GfxFormat.U8_RGBA_RT);
-        renderTarget.colorClearColor = { r: 0, g: 0, b: 0, a: 1 };
+        renderTarget.clearColor = { r: 0, g: 0, b: 0, a: 1 };
         renderTarget.setDimensions(canvas.width, canvas.height, 1);
 
         const renderTargetID = builder.createRenderTargetID(renderTarget, 'Main Render Target');
@@ -179,7 +174,7 @@ class Main {
             pass.attachRenderTargetID(GfxrAttachmentSlot.Color0, renderTargetID);
 
             pass.exec((passRenderer) => {
-                renderInstManager.drawOnPassRenderer(passRenderer);
+                this.renderList.drawOnPassRenderer(this.renderHelper.renderCache, passRenderer);
             });
         });
         // Push postprocessing passes, if desired...
@@ -191,8 +186,8 @@ class Main {
         // Schedule & run the render graph that we built above.
         this.renderHelper.renderGraph.execute(builder);
 
-        // Reset the render inst manager.
-        renderInstManager.resetRenderInsts();
+        // Reset our render inst list.
+        this.renderList.reset();
 
         requestAnimationFrame(() => {
             this.run();

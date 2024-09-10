@@ -3,8 +3,8 @@
 // by Metal, WebGPU and friends. The goal here is to be a good API to write to
 // while also allowing me to port to other backends (like WebGPU) in the future.
 
-import type { GfxBuffer, GfxTexture, GfxRenderTarget, GfxSampler, GfxProgram, GfxInputLayout, GfxInputState, GfxRenderPipeline, GfxBindings, GfxResource, GfxReadback } from "./GfxPlatformImpl";
-import { GfxFormat } from "./GfxPlatformFormat";
+import type { GfxBuffer, GfxTexture, GfxRenderTarget, GfxSampler, GfxProgram, GfxInputLayout, GfxRenderPipeline, GfxBindings, GfxResource, GfxReadback, GfxQueryPool, GfxComputePipeline } from "./GfxPlatformImpl.js";
+import { GfxFormat } from "./GfxPlatformFormat.js";
 
 export enum GfxCompareMode {
     Never        = WebGLRenderingContext.NEVER,
@@ -52,12 +52,15 @@ export const enum GfxWrapMode { Clamp, Repeat, Mirror }
 export const enum GfxTexFilterMode { Point, Bilinear }
 // TODO(jstpierre): remove NoMip
 export const enum GfxMipFilterMode { NoMip, Nearest, Linear }
-export const enum GfxPrimitiveTopology { Triangles }
+export const enum GfxPrimitiveTopology { Triangles, Lines }
 
 export const enum GfxBufferUsage {
-    Index   = 0x01,
-    Vertex  = 0x02,
-    Uniform = 0x03,
+    Index   = 0b00001,
+    Vertex  = 0b00010,
+    Uniform = 0b00100,
+    Storage = 0b01000,
+    CopySrc = 0b10000,
+    // All buffers are implicitly CopyDst so they can be filled by the CPU... maybe they shouldn't be...
 }
 
 export const enum GfxBufferFrequencyHint {
@@ -68,6 +71,7 @@ export const enum GfxBufferFrequencyHint {
 export const enum GfxVertexBufferFrequency {
     PerVertex   = 0x01,
     PerInstance = 0x02,
+    Constant    = 0x03,
 }
 
 export const enum GfxTextureDimension {
@@ -126,7 +130,7 @@ export interface GfxTextureDescriptor {
     pixelFormat: GfxFormat;
     width: number;
     height: number;
-    depth: number;
+    depthOrArrayLayers: number;
     numLevels: number;
     usage: GfxTextureUsage;
 }
@@ -134,7 +138,7 @@ export interface GfxTextureDescriptor {
 export function makeTextureDescriptor2D(pixelFormat: GfxFormat, width: number, height: number, numLevels: number): GfxTextureDescriptor {
     const dimension = GfxTextureDimension.n2D, depth = 1;
     const usage = GfxTextureUsage.Sampled;
-    return { dimension, pixelFormat, width, height, depth, numLevels, usage };
+    return { dimension, pixelFormat, width, height, depthOrArrayLayers: depth, numLevels, usage };
 }
 
 export interface GfxSamplerDescriptor {
@@ -147,6 +151,7 @@ export interface GfxSamplerDescriptor {
     minLOD?: number;
     maxLOD?: number;
     maxAnisotropy?: number;
+    compareMode?: GfxCompareMode;
 }
 
 export interface GfxRenderTargetDescriptor {
@@ -167,9 +172,24 @@ export interface GfxSamplerBinding {
     lateBinding: string | null;
 }
 
+export const enum GfxSamplerFormatKind {
+    Float,
+    Uint,
+    Sint,
+    Depth,
+}
+
+export interface GfxBindingLayoutSamplerDescriptor {
+    dimension: GfxTextureDimension;
+    formatKind: GfxSamplerFormatKind;
+    comparison?: boolean;
+}
+
 export interface GfxBindingLayoutDescriptor {
     numUniformBuffers: number;
+    // TODO(jstpierre): Remove / make optional?
     numSamplers: number;
+    samplerEntries?: GfxBindingLayoutSamplerDescriptor[];
 }
 
 export interface GfxBindingsDescriptor {
@@ -178,9 +198,45 @@ export interface GfxBindingsDescriptor {
     samplerBindings: GfxSamplerBinding[];
 }
 
-export interface GfxProgramDescriptorSimple {
+export const enum GfxBindingLayoutEntryType {
+    UniformBuffer,
+    Sampler,
+    StorageBuffer,
+    StorageTexture,
+}
+
+interface GfxBindingLayoutEntrySampler extends GfxBindingLayoutSamplerDescriptor {
+    type: GfxBindingLayoutEntryType.Sampler;
+}
+
+interface GfxBindingLayoutEntryBase {
+    type: GfxBindingLayoutEntryType;
+}
+
+type GfxBindingLayoutEntry = GfxBindingLayoutEntryBase | GfxBindingLayoutEntrySampler;
+
+export interface GfxBindingLayoutDescriptor2 {
+    entries: GfxBindingLayoutEntry[];
+}
+
+export interface GfxBindingsDescriptor2 {
+    bindingLayout: GfxBindingLayoutDescriptor2;
+    entries: (GfxBufferBinding | GfxSamplerBinding)[];
+}
+
+export interface GfxProgramDescriptor {
     preprocessedVert: string;
-    preprocessedFrag: string;
+    preprocessedFrag: string | null;
+}
+
+export const enum GfxShadingLanguage {
+    WGSL,
+    GLSL,
+}
+
+export interface GfxComputeProgramDescriptor {
+    shadingLanguage: GfxShadingLanguage;
+    preprocessedComp: string;
 }
 
 export interface GfxInputLayoutDescriptor {
@@ -212,6 +268,7 @@ export interface GfxMegaStateDescriptor {
     cullMode: GfxCullMode;
     frontFace: GfxFrontFaceMode;
     polygonOffset: boolean;
+    wireframe: boolean;
 }
 
 export interface GfxRenderPipelineDescriptor {
@@ -227,6 +284,11 @@ export interface GfxRenderPipelineDescriptor {
     sampleCount: number;
 }
 
+export interface GfxComputePipelineDescriptor {
+    program: GfxProgram;
+    pipelineLayout: any;
+}
+
 export interface GfxColor {
     r: number;
     g: number;
@@ -234,24 +296,46 @@ export interface GfxColor {
     a: number;
 }
 
+export interface GfxRenderAttachmentView {
+    level: number;
+    z: number;
+}
+
+export interface GfxRenderPassAttachment {
+    renderTarget: GfxRenderTarget;
+    view: GfxRenderAttachmentView;
+    resolveTo: GfxTexture | null;
+    resolveView: GfxRenderAttachmentView | null;
+    store: boolean;
+}
+
+export interface GfxRenderPassAttachmentColor extends GfxRenderPassAttachment {
+    clearColor: GfxColor | 'load';
+}
+
+export interface GfxRenderPassAttachmentDepthStencil extends GfxRenderPassAttachment {
+    clearDepth: number | 'load';
+    clearStencil: number | 'load';
+}
+
 export interface GfxRenderPassDescriptor {
-    colorAttachment: (GfxRenderTarget | null)[];
-    colorClearColor: (GfxColor | 'load')[];
-    colorResolveTo: (GfxTexture | null)[];
-    depthStencilAttachment: GfxRenderTarget | null;
-    depthStencilResolveTo: GfxTexture | null;
-    depthClearValue: number | 'load';
-    stencilClearValue: number | 'load';
+    colorAttachments: (GfxRenderPassAttachmentColor | null)[];
+    depthStencilAttachment: GfxRenderPassAttachmentDepthStencil | null;
+
+    // Query system.
+    occlusionQueryPool: GfxQueryPool | null;
 }
 
 export interface GfxDeviceLimits {
     uniformBufferWordAlignment: number;
     uniformBufferMaxPageWordSize: number;
     readonly supportedSampleCounts: number[];
+    occlusionQueriesRecommended: boolean;
+    computeShadersSupported: boolean;
+    wireframeSupported: boolean;
 }
 
-export interface GfxDebugGroup {
-    name: string;
+export interface GfxStatisticsGroup {
     drawCallCount: number;
     textureBindCount: number;
     bufferUploadCount: number;
@@ -264,8 +348,8 @@ export const enum GfxViewportOrigin {
 }
 
 export const enum GfxClipSpaceNearZ {
-    NegativeOne,
-    Zero,
+    NegativeOne = -1.0,
+    Zero = 0.0,
 }
 
 export interface GfxVendorInfo {
@@ -275,17 +359,12 @@ export interface GfxVendorInfo {
     readonly separateSamplerTextures: boolean;
     readonly viewportOrigin: GfxViewportOrigin;
     readonly clipSpaceNearZ: GfxClipSpaceNearZ;
-    readonly supportsSyncPipelineCompilation: boolean;
 }
 
 export type GfxPlatformFramebuffer = WebGLFramebuffer;
 
-// Viewport in normalized coordinate space, from 0 to 1.
-export interface GfxNormalizedViewportCoords {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
+export const enum GfxQueryPoolType {
+    OcclusionConservative,
 }
 
 export interface GfxSwapChain {
@@ -295,9 +374,7 @@ export interface GfxSwapChain {
     getDevice(): GfxDevice;
     getCanvas(): HTMLCanvasElement | OffscreenCanvas;
     getOnscreenTexture(): GfxTexture;
-    present(): void;
-    // TODO(jstpierre): Re-add XR support
-    // createWebXRLayer(webXRSession: XRSession): XRWebGLLayer;
+    createWebXRLayer(webXRSession: XRSession): PromiseLike<XRWebGLLayer>;
 }
 
 export interface GfxRenderPass {
@@ -306,17 +383,37 @@ export interface GfxRenderPass {
     setScissor(x: number, y: number, w: number, h: number): void;
     setPipeline(pipeline: GfxRenderPipeline): void;
     setBindings(bindingLayoutIndex: number, bindings: GfxBindings, dynamicByteOffsets: number[]): void;
-    setInputState(inputState: GfxInputState | null): void;
+    setVertexInput(inputLayout: GfxInputLayout | null, buffers: (GfxVertexBufferDescriptor | null)[] | null, indexBuffer: GfxIndexBufferDescriptor | null): void;
     setStencilRef(value: number): void;
-    setDebugPointer(value: any): void;
 
     // Draw commands.
     draw(vertexCount: number, firstVertex: number): void;
     drawIndexed(indexCount: number, firstIndex: number): void;
     drawIndexedInstanced(indexCount: number, firstIndex: number, instanceCount: number): void;
+
+    // Query system.
+    beginOcclusionQuery(dstOffs: number): void;
+    endOcclusionQuery(): void;
+
+    // Debug.
+    beginDebugGroup(name: string): void;
+    endDebugGroup(): void;
 };
 
-export type GfxPass = GfxRenderPass;
+export interface GfxComputePass {
+    // State management.
+    setPipeline(pipeline: GfxComputePipeline): void;
+    setBindings(bindingLayoutIndex: number, bindings: any, dynamicByteOffsets: number[]): void;
+
+    // Dispatch commands.
+    dispatch(x: number, y: number, z: number): void;
+
+    // Debug.
+    beginDebugGroup(name: string): void;
+    endDebugGroup(): void;
+}
+
+export type GfxPass = GfxRenderPass | GfxComputePass;
 
 /**
  * GfxDevice represents a "virtual GPU"; this is something that, in the abstract, has a bunch of resources
@@ -331,26 +428,25 @@ export type GfxPass = GfxRenderPass;
  * 
  * To upload data to the GPU, call either {@see uploadBufferData} or {@see uploadTextureData}. Note that
  * this happens on the GPU timeline. Where possible, do try to upload data at the beginning of the frame.
- * There might be additional support for more passes in the future.
  */
 export interface GfxDevice {
-    createBuffer(wordCount: number, usage: GfxBufferUsage, hint: GfxBufferFrequencyHint): GfxBuffer;
+    createBuffer(wordCount: number, usage: GfxBufferUsage, hint: GfxBufferFrequencyHint, initialData?: Uint8Array): GfxBuffer;
     createTexture(descriptor: GfxTextureDescriptor): GfxTexture;
     createSampler(descriptor: GfxSamplerDescriptor): GfxSampler;
     createRenderTarget(descriptor: GfxRenderTargetDescriptor): GfxRenderTarget;
     createRenderTargetFromTexture(texture: GfxTexture): GfxRenderTarget;
-    createProgram(program: GfxProgramDescriptorSimple): GfxProgram;
+    createProgram(descriptor: GfxProgramDescriptor): GfxProgram;
+    createComputeProgram(descriptor: GfxComputeProgramDescriptor): GfxProgram;
     createBindings(bindingsDescriptor: GfxBindingsDescriptor): GfxBindings;
     createInputLayout(inputLayoutDescriptor: GfxInputLayoutDescriptor): GfxInputLayout;
-    createInputState(inputLayout: GfxInputLayout, buffers: (GfxVertexBufferDescriptor | null)[], indexBuffer: GfxIndexBufferDescriptor | null): GfxInputState;
+    createComputePipeline(descriptor: GfxComputePipelineDescriptor): GfxComputePipeline;
     createRenderPipeline(descriptor: GfxRenderPipelineDescriptor): GfxRenderPipeline;
-    createReadback(elemCount: number): GfxReadback;
+    createReadback(byteCount: number): GfxReadback;
+    createQueryPool(type: GfxQueryPoolType, elemCount: number): GfxQueryPool;
 
-    /**
-     * Destructors. You *must* call these on resources you create; they will not GC naturally. Call checkForLeaks()
-     * to ensure that you are not leaking any resources. (In the noclip codebase, this happens automatically if you
-     * set loadSceneDelta to 0 and switch scenes).
-     */
+    // Destructors. You *must* call these on resources you create; they will not GC naturally. Call checkForLeaks()
+    // to ensure that you are not leaking any resources. (In the noclip codebase, this happens automatically if you
+    // set loadSceneDelta to 0 and switch scenes).
     destroyBuffer(o: GfxBuffer): void;
     destroyTexture(o: GfxTexture): void;
     destroySampler(o: GfxSampler): void;
@@ -358,29 +454,50 @@ export interface GfxDevice {
     destroyProgram(o: GfxProgram): void;
     destroyBindings(o: GfxBindings): void;
     destroyInputLayout(o: GfxInputLayout): void;
-    destroyInputState(o: GfxInputState): void;
+    destroyComputePipeline(o: GfxComputePipeline): void;
     destroyRenderPipeline(o: GfxRenderPipeline): void;
     destroyReadback(o: GfxReadback): void;
+    destroyQueryPool(o: GfxQueryPool): void;
+
+    // Render pipeline compilation control.
+    pipelineQueryReady(o: GfxRenderPipeline): boolean;
+    pipelineForceReady(o: GfxRenderPipeline): void;
 
     // Command submission.
     createRenderPass(renderPassDescriptor: GfxRenderPassDescriptor): GfxRenderPass;
+    createComputePass(): GfxComputePass;
     // Consumes and destroys the pass.
     submitPass(o: GfxPass): void;
+    beginFrame(): void;
+    endFrame(): void;
+
+    // Copying.
+    copySubTexture2D(dst: GfxTexture, dstX: number, dstY: number, src: GfxTexture, srcX: number, srcY: number): void;
 
     // Data submission
+    zeroBuffer(buffer: GfxBuffer, dstByteOffset: number, byteCount: number): void;
     uploadBufferData(buffer: GfxBuffer, dstByteOffset: number, data: Uint8Array, srcByteOffset?: number, byteCount?: number): void;
     uploadTextureData(texture: GfxTexture, firstMipLevel: number, levelDatas: ArrayBufferView[]): void;
 
     // Readback system.
+    readBuffer(o: GfxReadback, dstOffset: number, buffer: GfxBuffer, srcOffset: number, byteSize: number): void;
     readPixelFromTexture(o: GfxReadback, dstOffset: number, a: GfxTexture, x: number, y: number): void;
     submitReadback(o: GfxReadback): void;
+    /**
+     * Checks if the readback object {@param o} is ready. If so, this will write the full set of readback
+     * values to {@param dst}, starting at index {@param dstOffs}, and returns true. If the readback is
+     * not ready, false is returned, and the array is untouched.
+     */
     queryReadbackFinished(dst: Uint32Array, dstOffs: number, o: GfxReadback): boolean;
+
+    // Query system
+    // Returns null if the query results are still pending. Returns true if any samples passed.
+    // TODO(jstpierre): Check the pool as a whole?
+    queryPoolResultOcclusion(o: GfxQueryPool, dstOffs: number): boolean | null;
 
     // Information queries.
     queryLimits(): GfxDeviceLimits;
-    queryTextureFormatSupported(format: GfxFormat): boolean;
-    queryPipelineReady(o: GfxRenderPipeline): boolean;
-    queryPlatformAvailable(): boolean;
+    queryTextureFormatSupported(format: GfxFormat, width: number, height: number): boolean;
     queryVendorInfo(): GfxVendorInfo;
     queryRenderPass(o: GfxRenderPass): Readonly<GfxRenderPassDescriptor>;
     queryRenderTarget(o: GfxRenderTarget): Readonly<GfxRenderTargetDescriptor>;
@@ -389,10 +506,10 @@ export interface GfxDevice {
     setResourceName(o: GfxResource, s: string): void;
     setResourceLeakCheck(o: GfxResource, v: boolean): void;
     checkForLeaks(): void;
-    programPatched(o: GfxProgram, descriptor: GfxProgramDescriptorSimple): void;
-    pushDebugGroup(debugGroup: GfxDebugGroup): void;
-    popDebugGroup(): void;
+    programPatched(o: GfxProgram, descriptor: GfxProgramDescriptor): void;
+    pushStatisticsGroup(statisticsGroup: GfxStatisticsGroup): void;
+    popStatisticsGroup(): void;
 }
 
-export type { GfxBuffer, GfxTexture, GfxRenderTarget, GfxSampler, GfxProgram, GfxInputLayout, GfxInputState, GfxRenderPipeline, GfxBindings };
+export type { GfxBuffer, GfxTexture, GfxRenderTarget, GfxSampler, GfxProgram, GfxInputLayout, GfxRenderPipeline, GfxBindings };
 export { GfxFormat };
